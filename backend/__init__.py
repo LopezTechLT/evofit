@@ -2,6 +2,7 @@ import os
 from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_cors import CORS
 from backend.config import Config
 
 db = SQLAlchemy()
@@ -10,6 +11,7 @@ login_manager = LoginManager()
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    CORS(app, origins=["https://evofit-a7xkyrob3-lopez-tech-lt-s-projects.vercel.app"], supports_credentials=True)
 
     db.init_app(app)
     login_manager.init_app(app)

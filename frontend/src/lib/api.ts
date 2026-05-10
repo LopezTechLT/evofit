@@ -141,7 +141,7 @@ export type UserProfile = {
   isFollowing: boolean
 }
 
-const baseUrl = ''
+const baseUrl = typeof import.meta !== 'undefined' && import.meta.env.VITE_API_URL || ''
 
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${baseUrl}${path}`, { credentials: 'include' })
