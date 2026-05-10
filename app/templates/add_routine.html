@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="mb-0">Añadir rutina</h2>
+    <a href="{{ url_for('main.client_detail', id=client_id) }}" class="btn btn-outline-dark btn-sm">← Volver</a>
+</div>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-control", placeholder="Ej: Full Body") }}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form.category.label(class="form-label") }}
+                {{ form.category(class="form-select") }}
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Ejercicios</label>
+        <div class="card p-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="text-muted small">Agrega los ejercicios con series, repeticiones y descanso.</div>
+                <button type="button" class="btn btn-sm btn-dark" id="addExerciseBtn">+ Añadir ejercicio</button>
+            </div>
+            <div id="exerciseList" class="d-grid gap-2"></div>
+        </div>
+        <div class="form-text mt-2">
+            Se guardará automáticamente en formato JSON.
+        </div>
+        <div class="d-none">
+            {{ form.exercises.label(class="form-label") }}
+            {{ form.exercises(class="form-control", rows=5, id="exercisesJson") }}
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        {{ form.submit(class="btn btn-dark") }}
+        <a href="{{ url_for('main.client_detail', id=client_id) }}" class="btn btn-outline-dark">Cancelar</a>
+    </div>
+</form>
+
+<script>
+    const listEl = document.getElementById('exerciseList');
+    const addBtn = document.getElementById('addExerciseBtn');
+    const jsonEl = document.getElementById('exercisesJson');
+
+    function escapeHtml(s) {
+        return (s ?? '').toString()
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    function renderExerciseRow(value = {}) {
+        const row = document.createElement('div');
+        row.className = 'border rounded-4 p-3';
+        row.innerHTML = `
+            <div class="d-flex align-items-start justify-content-between gap-2">
+                <div class="flex-grow-1">
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <input class="form-control form-control-sm" name="ex_name" placeholder="Nombre del ejercicio" value="${escapeHtml(value.name)}">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label mb-1 small">Series</label>
+                            <input class="form-control form-control-sm" type="number" min="1" name="ex_sets" value="${escapeHtml(value.sets ?? 3)}">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label mb-1 small">Reps</label>
+                            <input class="form-control form-control-sm" type="number" min="1" name="ex_reps" value="${escapeHtml(value.reps ?? 12)}">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label mb-1 small">Descanso (s)</label>
+                            <input class="form-control form-control-sm" type="number" min="0" name="ex_rest" value="${escapeHtml(value.rest_seconds ?? 60)}">
+                        </div>
+                        <div class="col-12">
+                            <input class="form-control form-control-sm" name="ex_notes" placeholder="Notas (opcional)" value="${escapeHtml(value.notes ?? '')}">
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-dark mt-4" title="Quitar" aria-label="Quitar ejercicio">✕</button>
+            </div>
+        `;
+        row.querySelector('button').addEventListener('click', () => row.remove());
+        listEl.appendChild(row);
+    }
+
+    function readExercisesFromUI() {
+        const rows = Array.from(listEl.children);
+        const items = [];
+        for (const row of rows) {
+            const name = row.querySelector('input[name="ex_name"]').value.trim();
+            const sets = Number(row.querySelector('input[name="ex_sets"]').value || 0);
+            const reps = Number(row.querySelector('input[name="ex_reps"]').value || 0);
+            const rest = Number(row.querySelector('input[name="ex_rest"]').value || 0);
+            const notes = row.querySelector('input[name="ex_notes"]').value.trim();
+            if (!name) continue;
+            items.push({
+                name,
+                sets: Math.max(1, sets || 1),
+                reps: Math.max(1, reps || 1),
+                rest_seconds: Math.max(0, rest || 0),
+                notes: notes || null
+            });
+        }
+        return items;
+    }
+
+    function hydrateFromJson() {
+        if (!jsonEl || !jsonEl.value) return false;
+        try {
+            const parsed = JSON.parse(jsonEl.value);
+            if (!Array.isArray(parsed)) return false;
+            listEl.innerHTML = '';
+            parsed.forEach(item => renderExerciseRow(item));
+            return parsed.length > 0;
+        } catch {
+            return false;
+        }
+    }
+
+    addBtn.addEventListener('click', () => renderExerciseRow());
+    const hydrated = hydrateFromJson();
+    if (!hydrated) renderExerciseRow();
+
+    document.querySelector('form').addEventListener('submit', (e) => {
+        const items = readExercisesFromUI();
+        if (items.length === 0) {
+            e.preventDefault();
+            alert('Agrega al menos 1 ejercicio.');
+            return;
+        }
+        jsonEl.value = JSON.stringify(items);
+    });
+</script>
+{% endblock %}

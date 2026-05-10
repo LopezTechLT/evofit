@@ -1,0 +1,143 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<section class="hero pb-5">
+    <div class="row align-items-center">
+        <div class="col-lg-6">
+            <p class="eyebrow mb-3">Transforma tu gimnasio</p>
+            <h1 class="display-5 fw-bold">La plataforma que hace crecer tu gimnasio con estilo.</h1>
+            <p class="lead text-muted mb-4">EVOFIT combina administración de clientes, control de membresías, pagos, rutinas y progreso en una experiencia visual moderna y profesional.</p>
+            <div class="d-flex flex-wrap gap-3">
+                {% if not current_user.is_authenticated %}
+                    <a class="btn btn-primary btn-lg" href="{{ url_for('auth.register_gym') }}">Registrar mi gimnasio</a>
+                    <a class="btn btn-outline-light btn-lg" href="{{ url_for('auth.login') }}">Iniciar sesión</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-lg-6 text-center mt-5 mt-lg-0">
+            <div class="hero-card p-4 shadow-lg rounded-4">
+                <h4 class="mb-3">Planes inteligentes</h4>
+                <p class="text-muted">Crea el plan perfecto para cada cliente y controla sus avances con datos claros.</p>
+                <div class="plan-badge">Lo mejor para tu gimnasio</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="beneficios" class="section section-bg py-5">
+    <div class="text-center mb-5">
+        <p class="eyebrow mb-2">Beneficios</p>
+        <h2 class="fw-bold">Optimiza tu gestión y enamora a tus clientes</h2>
+        <p class="text-muted">Desde el registro hasta el seguimiento diario, EVOFIT hace todo más sencillo.</p>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="feature-card p-4 rounded-4 shadow-sm h-100">
+                <h5>Registro automático</h5>
+                <p class="text-muted">Al registrar un usuario, se crea su perfil de cliente de manera inmediata.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-card p-4 rounded-4 shadow-sm h-100">
+                <h5>Rutinas y progreso</h5>
+                <p class="text-muted">Gestiona rutinas, peso, IMC y mediciones con historial claro.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-card p-4 rounded-4 shadow-sm h-100">
+                <h5>Membresías y pagos</h5>
+                <p class="text-muted">Controla vencimientos, planes y pagos desde una sola interfaz.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="planes" class="section py-5">
+    <div class="text-center mb-5">
+        <p class="eyebrow mb-2">Planes</p>
+        <h2 class="fw-bold">Elige el plan que impulse tu gimnasio</h2>
+        <p class="text-muted">Escoge la opción ideal para tu red de sedes, entrenadores y clientes.</p>
+    </div>
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="plan-card plan-card-highlight p-4 rounded-4 shadow-lg h-100 animate-card">
+                <span class="badge bg-white text-dark mb-3">El más destacado</span>
+                <h5 class="mb-3">Plan Black</h5>
+                <p class="text-muted">Entrena en cualquiera de nuestras sedes en América Latina.</p>
+                <div class="display-6 fw-bold mb-2">DESDE $119.900</div>
+                <div class="text-decoration-line-through text-muted">$59.950</div>
+                <div class="fw-semibold text-success mb-3">50% OFF mensual por 2 meses, después $119.900/mes</div>
+                <p class="text-muted mb-4">12 meses de fidelidad</p>
+                <ul class="list-unstyled mt-3 mb-4 text-muted">
+                    <li>Acceso ilimitado a más de 2.000 sedes de la red</li>
+                    <li>Derecho a traer un invitado 5 veces al mes</li>
+                    <li>Smart Spa (relájate en los sillones de masajes)</li>
+                    <li>Descuentos especiales en marcas aliadas</li>
+                    <li>Smart Fit App (tu plan de entrenamiento personalizado)</li>
+                    <li>Clases grupales con profesores* (sujeto a disponibilidad)</li>
+                    <li>Acceso a todas las áreas de la sede</li>
+                </ul>
+                <a href="#contacto" class="btn btn-light">Contrata ahora</a>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="plan-card p-4 rounded-4 shadow-lg h-100 animate-card">
+                <span class="badge bg-primary mb-3">Plan Fit</span>
+                <h5 class="mb-3">Entrena cuando quieras</h5>
+                <p class="text-muted">Accede a tu sede de elección con todos los beneficios esenciales.</p>
+                <div class="display-6 fw-bold mb-2">DESDE $69.900</div>
+                <div class="text-decoration-line-through text-muted">$34.950</div>
+                <div class="fw-semibold text-success mb-3">50% OFF mensual por 2 meses, después $69.900/mes</div>
+                <p class="text-muted mb-4">12 meses de fidelidad</p>
+                <ul class="list-unstyled mt-3 mb-4 text-muted">
+                    <li>Acceso ilimitado a más de 2.000 sedes de la red</li>
+                    <li>Derecho a traer un invitado 5 veces al mes</li>
+                    <li>Smart Spa (relájate en los sillones de masajes)</li>
+                    <li>Descuentos especiales en marcas aliadas</li>
+                    <li>Smart Fit App (tu plan de entrenamiento personalizado)</li>
+                    <li>Clases grupales con profesores* (sujeto a disponibilidad)</li>
+                    <li>Acceso a todas las áreas de la sede</li>
+                </ul>
+                <a href="#contacto" class="btn btn-primary">¡Inscríbete ya!</a>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="plan-card p-4 rounded-4 shadow-lg h-100 animate-card">
+                <span class="badge bg-secondary mb-3">Plan Smart</span>
+                <h5 class="mb-3">Entrena cuando quieras</h5>
+                <p class="text-muted">Funciona para quienes buscan flexibilidad sin compromisos largos.</p>
+                <div class="display-6 fw-bold mb-2">DESDE $89.900</div>
+                <div class="text-decoration-line-through text-muted">$44.950</div>
+                <div class="fw-semibold text-success mb-3">50% OFF mensual por 2 meses, después $89.900/mes</div>
+                <p class="text-muted mb-4">Sin fidelidad</p>
+                <ul class="list-unstyled mt-3 mb-4 text-muted">
+                    <li>Acceso ilimitado a más de 2.000 sedes de la red</li>
+                    <li>Derecho a traer un invitado 5 veces al mes</li>
+                    <li>Smart Spa (relájate en los sillones de masajes)</li>
+                    <li>Descuentos especiales en marcas aliadas</li>
+                    <li>Smart Fit App (tu plan de entrenamiento personalizado)</li>
+                    <li>Clases grupales con profesores* (sujeto a disponibilidad)</li>
+                    <li>Acceso a todas las áreas de la sede</li>
+                </ul>
+                <a href="#contacto" class="btn btn-outline-light">¡Inscríbete ya!</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="contacto" class="section section-bg py-5">
+    <div class="row align-items-center">
+        <div class="col-lg-7">
+            <h2 class="fw-bold">Listo para llevar tu gimnasio al siguiente nivel?</h2>
+            <p class="text-muted">Registra a tus clientes con una plataforma profesional y moderna. Todo lo que necesitas está aquí.</p>
+        </div>
+        <div class="col-lg-5 text-lg-end mt-4 mt-lg-0">
+            {% if not current_user.is_authenticated %}
+                <a class="btn btn-primary btn-lg" href="{{ url_for('auth.register_gym') }}">Registrar mi gimnasio</a>
+            {% else %}
+                <a class="btn btn-primary btn-lg" href="{{ url_for('main.client_dashboard') }}">Ir a mi perfil</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,200 @@
+﻿body {
+    background: #f3f4f6;
+    color: #111827;
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.navbar-custom {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.navbar-brand {
+    letter-spacing: 0.05em;
+    color: #111827 !important;
+}
+
+.brand-logo {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+}
+
+
+.navbar-custom .nav-link {
+    color: #111827 !important;
+}
+
+.navbar-custom .nav-link:hover,
+.navbar-custom .nav-link:focus {
+    color: #0f172a !important;
+}
+
+.btn-outline-light {
+    border-color: #111827;
+    color: #111827;
+    background: transparent;
+}
+
+.btn-outline-light:hover {
+    background: #f8fafc;
+    color: #111827;
+}
+
+.hero {
+    min-height: 70vh;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+    background: #ffffff;
+    border-radius: 2rem;
+    padding: 3rem;
+    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.08);
+}
+
+.hero-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #e5e7eb;
+    backdrop-filter: blur(15px);
+}
+
+.hero-card .plan-badge {
+    display: inline-block;
+    padding: 0.65rem 1rem;
+    border-radius: 999px;
+    background: #111827;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.section {
+    position: relative;
+}
+
+.section-bg {
+    background: #f8fafc;
+}
+
+.feature-card,
+.plan-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    color: #111827;
+}
+
+.card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    color: #111827;
+}
+
+.card .card-body,
+.card .card-title,
+.card .card-text,
+.card .list-group-item,
+.card table,
+.card th,
+.card td,
+.card p,
+.card li,
+.card strong {
+    color: #111827;
+}
+
+.list-group-item {
+    background: #ffffff;
+    border-color: #e5e7eb;
+    color: #111827;
+}
+
+.table {
+    color: #111827;
+}
+
+.table th,
+.table td {
+    border-color: #e5e7eb;
+}
+
+.table thead th {
+    color: #111827;
+}
+
+.feature-card:hover,
+.plan-card:hover,
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+}
+
+.plan-card-highlight {
+    background: linear-gradient(135deg, #111827 0%, #4b5563 100%);
+    color: #ffffff;
+}
+
+.plan-card-highlight h5,
+.plan-card-highlight p,
+.plan-card-highlight .fw-bold,
+.plan-card-highlight li {
+    color: #ffffff;
+}
+
+.plan-card .badge {
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: #111827;
+    color: #ffffff;
+}
+
+.animate-card {
+    animation: float-card 1.2s ease both;
+}
+
+@keyframes float-card {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+footer.footer {
+    background: #111827;
+    color: #f9fafb;
+}
+
+.btn-primary {
+    background: #111827;
+    border: none;
+}
+
+.btn-primary:hover {
+    background: #0f172a;
+}
+
+.btn-outline-light {
+    border-color: #111827;
+    color: #111827;
+}
+
+.btn-outline-light:hover {
+    background: rgba(17, 24, 39, 0.08);
+}
+
+.alert {
+    border-radius: 1rem;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #111827;
+}

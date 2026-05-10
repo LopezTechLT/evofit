@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="mb-0">Añadir progreso</h2>
+    <a href="{{ url_for('main.client_detail', id=client_id) }}" class="btn btn-outline-dark btn-sm">← Volver</a>
+</div>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.weight.label(class="form-label") }}
+        {{ form.weight(class="form-control", placeholder="Ej: 75.5") }}
+    </div>
+    <div class="mb-3">
+        {{ form.measurements.label(class="form-label") }}
+        {{ form.measurements(class="form-control", rows=4, placeholder='{"brazo": 35.5, "cintura": 80}') }}
+    </div>
+    <div class="d-flex gap-2">
+        {{ form.submit(class="btn btn-dark") }}
+        <a href="{{ url_for('main.client_detail', id=client_id) }}" class="btn btn-outline-dark">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

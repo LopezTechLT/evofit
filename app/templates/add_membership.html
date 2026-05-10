@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="mb-0">Añadir membresía</h2>
+    <a href="{{ url_for('main.client_detail', id=client_id) }}" class="btn btn-outline-dark btn-sm">← Volver</a>
+</div>
+<div class="alert alert-info">
+    Los precios se asignan automáticamente según el plan:
+    <ul class="mb-0">
+        <li>Mensual: $119.900</li>
+        <li>Quincenal: $69.900</li>
+        <li>Semanal: $44.950</li>
+        <li>Anual: $299.900</li>
+    </ul>
+</div>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.plan.label(class="form-label") }}
+        {{ form.plan(class="form-select") }}
+    </div>
+    <div class="mb-3">
+        {{ form.end_date.label(class="form-label") }}
+        {{ form.end_date(class="form-control", type="date") }}
+    </div>
+    <div class="d-flex gap-2">
+        {{ form.submit(class="btn btn-dark") }}
+        <a href="{{ url_for('main.client_detail', id=client_id) }}" class="btn btn-outline-dark">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

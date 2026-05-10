@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <h2>Gimnasios pendientes de aprobación</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h4 class="mb-3">Pendientes ({{ pending|length }})</h4>
+                {% if pending %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>ID</th><th>Nombre</th><th>Slug</th><th>Plan</th><th>Acción</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for gym in pending %}
+                            <tr>
+                                <td>{{ gym.id }}</td>
+                                <td>{{ gym.name }}</td>
+                                <td>{{ gym.slug }}</td>
+                                <td>{{ gym.plan }}</td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('admin.approve_gym', gym_id=gym.id) }}" style="display:inline">
+                                        <button type="submit" class="btn btn-success btn-sm">Aprobar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No hay gimnasios pendientes.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h4 class="mb-3">Aprobados ({{ approved|length }})</h4>
+                {% if approved %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>ID</th><th>Nombre</th><th>Slug</th><th>Plan</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for gym in approved %}
+                            <tr>
+                                <td>{{ gym.id }}</td>
+                                <td>{{ gym.name }}</td>
+                                <td>{{ gym.slug }}</td>
+                                <td>{{ gym.plan }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No hay gimnasios aprobados.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

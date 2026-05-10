@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>{{ client.name }}</h2>
+<div class="row">
+    <div class="col-md-4">
+        {% if client.photo %}
+            <img src="{{ url_for('static', filename='images/' + client.photo) }}" class="img-fluid" alt="Foto">
+        {% endif %}
+        {% if client.qr_code %}
+            <img src="{{ url_for('static', filename='images/' + client.qr_code) }}" class="img-fluid mt-3" alt="Código QR">
+        {% endif %}
+    </div>
+    <div class="col-md-8">
+        <p><strong>Correo:</strong> {{ client.email }}</p>
+        <p><strong>Objetivo:</strong> {{ client.goal }}</p>
+        <p><strong>Estado:</strong> {{ client.membership_status }}</p>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('main.add_membership', client_id=client.id) }}" class="btn btn-dark">Añadir membresía</a>
+            <a href="{{ url_for('main.add_payment', client_id=client.id) }}" class="btn btn-dark">Añadir pago</a>
+            <a href="{{ url_for('main.add_routine', client_id=client.id) }}" class="btn btn-dark">Añadir rutina</a>
+            <a href="{{ url_for('main.add_progress', client_id=client.id) }}" class="btn btn-dark">Añadir progreso</a>
+            {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                <form method="POST" action="{{ url_for('admin.delete_client', id=client.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar este cliente?');">
+                    <button type="submit" class="btn btn-dark">Borrar cliente</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if current_user.is_authenticated and current_user.role == 'admin' and membership %}
+<div class="mt-4">
+    <h3>Membresía actual</h3>
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="card p-3">
+                <p><strong>Plan:</strong> {{ membership.plan }}</p>
+                <p><strong>Vence:</strong> {{ membership.end_date.strftime('%Y-%m-%d') }}</p>
+                <p><strong>Monto:</strong> ${{ "%.2f"|format(membership_price) }}</p>
+                <p><strong>Pagado:</strong> ${{ "%.2f"|format(paid_amount) }}</p>
+                <p><strong>Falta:</strong> ${{ "%.2f"|format(due_amount) }}</p>
+                <form method="POST" action="{{ url_for('admin.delete_membership', id=membership.id) }}" onsubmit="return confirm('¿Eliminar esta membresía?');">
+                    <button type="submit" class="btn btn-sm btn-dark">Eliminar membresía</button>
+                </form>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card p-3">
+                <h5 class="card-title mb-3">Saldo de membresía</h5>
+                <div style="position: relative; height: 240px;">
+                    <canvas id="clientMembershipBalanceChart"></canvas>
+                </div>
+                <hr>
+                <h6 class="mb-2">Pagos de esta membresía</h6>
+                {% if membership_payments %}
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Monto</th>
+                                    <th>Método</th>
+                                    <th>Descripción</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pay in membership_payments %}
+                                    <tr>
+                                        <td>{{ pay.date.strftime('%Y-%m-%d') }}</td>
+                                        <td>${{ "%.2f"|format(pay.amount) }}</td>
+                                        <td>{{ pay.method or '' }}</td>
+                                        <td>{{ pay.description or '' }}</td>
+                                        <td class="text-end">
+                                            <form method="POST" action="{{ url_for('admin.delete_payment', id=pay.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar este pago?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-dark">Eliminar</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="mb-0 text-muted">No hay pagos registrados para esta membresía.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const balanceCanvas = document.getElementById('clientMembershipBalanceChart');
+    if (balanceCanvas && window.Chart) {
+        const existing = Chart.getChart ? Chart.getChart(balanceCanvas) : null;
+        if (existing) existing.destroy();
+
+        new Chart(balanceCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pagado', 'Falta'],
+                datasets: [{
+                    data: [{{ paid_amount }}, {{ due_amount }}],
+                    backgroundColor: ['#22c55e', '#ef4444'],
+                    borderColor: ['#ffffff', '#ffffff'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    }
+</script>
+{% endblock %}

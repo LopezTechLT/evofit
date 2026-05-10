@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-5 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h4 class="mb-3">Crear gimnasio</h4>
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control", placeholder="Ej: Iron Gym") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.slug.label(class="form-label") }}
+                        {{ form.slug(class="form-control", placeholder="Ej: iron-gym") }}
+                        <small class="text-muted">Si lo dejas vacío, se genera automáticamente.</small>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.plan.label(class="form-label") }}
+                        {{ form.plan(class="form-select") }}
+                    </div>
+                    {{ form.submit(class="btn btn-primary") }}
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h4 class="mb-3">Gimnasios creados</h4>
+                {% if gyms %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>ID</th><th>Nombre</th><th>Slug</th><th>Plan</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for gym in gyms %}
+                            <tr>
+                                <td>{{ gym.id }}</td>
+                                <td>{{ gym.name }}</td>
+                                <td>{{ gym.slug }}</td>
+                                <td>{{ gym.plan }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">Aún no hay gimnasios registrados.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

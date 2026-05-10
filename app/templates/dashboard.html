@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="mb-0">Panel administrador</h2>
+    <a href="{{ url_for('admin.memberships') }}" class="btn btn-outline-secondary">Ver membresías</a>
+</div>
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Clientes activos</h5>
+                <p class="card-text">{{ active_clients }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Membresías vencidas</h5>
+                <p class="card-text">{{ expired }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Ingresos del mes</h5>
+                <p class="card-text">${{ "%.2f"|format(monthly_revenue) }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Clientes totales</h5>
+                <p class="card-text">{{ total_clients }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mt-4">
+    <div class="col-lg-6">
+        <div class="card p-4">
+            <h5 class="card-title">Estado de pago de membresías</h5>
+            <div style="position: relative; height: 240px;">
+                <canvas id="paymentStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const paymentStatusCanvas = document.getElementById('paymentStatusChart');
+    if (paymentStatusCanvas && window.Chart) {
+        const existingChart = Chart.getChart ? Chart.getChart(paymentStatusCanvas) : null;
+        if (existingChart) existingChart.destroy();
+
+        new Chart(paymentStatusCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pagadas', 'Pendientes'],
+                datasets: [{
+                    data: [{{ paid_memberships }}, {{ pending_memberships }}],
+                    backgroundColor: ['#22c55e', '#f59e0b'],
+                    borderColor: ['#ffffff', '#ffffff'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

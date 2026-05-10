@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Membresías</h2>
+<p>Revisa y administra las membresías activas y vencidas de tus clientes.</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Cliente</th>
+            <th>Correo</th>
+            <th>Plan</th>
+            <th>Precio</th>
+            <th>Pagado</th>
+            <th>Saldo</th>
+            <th>Vence</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in memberships %}
+        <tr>
+            <td>{{ item.membership.client.name }}</td>
+            <td>{{ item.membership.client.email }}</td>
+            <td>{{ item.membership.plan }}</td>
+            <td>${{ "%.2f"|format(item.membership.price) }}</td>
+            <td>${{ "%.2f"|format(item.paid_amount) }}</td>
+            <td>${{ "%.2f"|format(item.due_amount) }}</td>
+            <td>{{ item.membership.end_date.strftime('%Y-%m-%d') }}</td>
+            <td>
+                {% if item.membership.end_date >= now %}
+                    <span class="badge bg-success">Activa</span>
+                {% else %}
+                    <span class="badge bg-danger">Vencida</span>
+                {% endif %}
+                <br>
+                <span class="badge bg-{{ 'success' if item.status == 'Pagada' else 'warning' }} mt-1">{{ item.status }}</span>
+            </td>
+            <td>
+                <a href="{{ url_for('main.client_detail', id=item.membership.client.id) }}" class="btn btn-sm btn-info">Ver cliente</a>
+                <form method="POST" action="{{ url_for('admin.delete_membership', id=item.membership.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar esta membresía?');">
+                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
