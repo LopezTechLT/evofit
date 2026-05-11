@@ -18,9 +18,10 @@ def _get_current_client():
 
 @main.route('/')
 def index():
-    frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '..', 'frontend', 'dist')
-    if os.path.isdir(os.path.join(frontend_dist, 'assets')):
-        return send_from_directory(frontend_dist, 'index.html')
+    if current_user.is_authenticated:
+        frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '..', 'frontend', 'dist')
+        if os.path.isdir(os.path.join(frontend_dist, 'assets')):
+            return send_from_directory(frontend_dist, 'index.html')
     return render_template('index.html')
 
 @main.route('/fitness')
