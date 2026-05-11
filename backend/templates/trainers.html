@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <h2 class="mb-0">Entrenadores (Staff)</h2>
+</div>
+
+{% if current_user.role == 'admin' %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Nuevo entrenador</h5>
+        <form method="POST" class="row g-2">
+            <div class="col-md-3"><input name="username" class="form-control" placeholder="Username" required></div>
+            <div class="col-md-3"><input name="email" type="email" class="form-control" placeholder="Email" required></div>
+            <div class="col-md-3"><input name="password" type="password" class="form-control" placeholder="Contraseña" required></div>
+            <div class="col-md-3"><button type="submit" class="btn btn-dark w-100">Crear entrenador</button></div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    {% for t in trainers %}
+    {% set user = t.user_id and User.query.get(t.user_id) %}
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ user.username if user else '—' }}</h5>
+                <p class="text-muted small mb-1">{{ user.email if user else '—' }}</p>
+                <p class="mb-2">{{ t.clients|length }} cliente(s) asignado(s)</p>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#assign{{ t.id }}">Asignar clientes</button>
+                <form method="POST" action="{{ url_for('admin.delete_trainer', trainer_id=t.id) }}" style="display:inline" onsubmit="return confirm('¿Eliminar este entrenador?');">
+                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                </form>
+                <div class="collapse mt-2" id="assign{{ t.id }}">
+                    <form method="POST" action="{{ url_for('admin.assign_clients', trainer_id=t.id) }}">
+                        {% for c in unassigned %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="client_ids" value="{{ c.id }}" id="c{{ t.id }}_{{ c.id }}">
+                            <label class="form-check-label" for="c{{ t.id }}_{{ c.id }}">{{ c.name }} {{ c.last_name or '' }}</label>
+                        </div>
+                        {% else %}
+                        <p class="text-muted small mb-0">No hay clientes sin asignar.</p>
+                        {% endfor %}
+                        {% if unassigned %}
+                        <button type="submit" class="btn btn-sm btn-dark mt-2">Guardar</button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col"><p class="text-muted">No hay entrenadores registrados.</p></div>
+    {% endfor %}
+</div>
+{% endblock %}

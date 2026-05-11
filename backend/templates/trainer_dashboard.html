@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-3">Mis clientes</h2>
+{% if clients %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead><tr><th>Nombre</th><th>Email</th><th>Meta</th><th>Estado</th></tr></thead>
+        <tbody>
+            {% for c in clients %}
+            <tr>
+                <td>{{ c.name }} {{ c.last_name or '' }}</td>
+                <td>{{ c.email }}</td>
+                <td>{{ c.goal or '—' }}</td>
+                <td>{{ c.membership_status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">No tienes clientes asignados todavía.</p>
+{% endif %}
+{% endblock %}

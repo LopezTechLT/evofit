@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <h2 class="mb-0">Inventario</h2>
+</div>
+
+{% if low_stock %}
+<div class="alert alert-warning">
+    <strong>Stock bajo:</strong>
+    {% for p in low_stock %}
+    <span class="badge bg-warning text-dark me-1">{{ p.name }} ({{ p.stock }})</span>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if current_user.role == 'admin' %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Nuevo producto</h5>
+        <form method="POST" class="row g-2">
+            <div class="col-md-3"><input name="name" class="form-control" placeholder="Nombre" required></div>
+            <div class="col-md-3"><input name="category" class="form-control" placeholder="Categoría"></div>
+            <div class="col-md-2"><input name="price" type="number" step="0.01" class="form-control" placeholder="Precio" value="0"></div>
+            <div class="col-md-2"><input name="stock" type="number" class="form-control" placeholder="Stock inicial" value="0"></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-dark w-100">Crear</button></div>
+            <div class="col-12"><textarea name="description" class="form-control" placeholder="Descripción (opcional)" rows="2"></textarea></div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead><tr><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th></th></tr></thead>
+        <tbody>
+            {% for p in products %}
+            <tr class="{% if p.stock <= 5 and p.stock > 0 %}table-warning{% elif p.stock == 0 %}table-danger{% endif %}">
+                <td>
+                    <strong>{{ p.name }}</strong>
+                    {% if p.description %}<br><small class="text-muted">{{ p.description }}</small>{% endif %}
+                </td>
+                <td>{{ p.category or '—' }}</td>
+                <td>${{ '%.2f'|format(p.price) }}</td>
+                <td>
+                    {% if p.stock <= 0 %}
+                    <span class="badge bg-danger">Agotado</span>
+                    {% elif p.stock <= 5 %}
+                    <span class="badge bg-warning text-dark">{{ p.stock }}</span>
+                    {% else %}
+                    <span class="badge bg-success">{{ p.stock }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('admin.product_movements', product_id=p.id) }}" class="btn btn-sm btn-outline-secondary">Movimientos</a>
+                    {% if current_user.role == 'admin' %}
+                    <form method="POST" action="{{ url_for('admin.delete_product', id=p.id) }}" style="display:inline" onsubmit="return confirm('¿Eliminar producto?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-muted">Sin productos</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

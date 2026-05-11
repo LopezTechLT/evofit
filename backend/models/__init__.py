@@ -319,6 +319,28 @@ class ClassReservation(db.Model):
     client = db.relationship('Client', backref='class_reservations')
 
 
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    gym_id = db.Column(db.Integer, db.ForeignKey('gym.id'), nullable=True)
+    name = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text, default='')
+    price = db.Column(db.Float, default=0)
+    stock = db.Column(db.Integer, default=0)
+    category = db.Column(db.String(100), default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    gym = db.relationship('Gym', backref='products')
+    movements = db.relationship('StockMovement', backref='product', lazy=True)
+
+
+class StockMovement(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    type = db.Column(db.String(20), nullable=False)  # entrada / salida
+    quantity = db.Column(db.Integer, nullable=False)
+    description = db.Column(db.String(200), default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class EmailSettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     smtp_host = db.Column(db.String(200), default='smtp.gmail.com')

@@ -59,6 +59,8 @@ def login():
             if user.role == 'user':
                 _create_client_for_user(user)
                 return redirect('/landing')
+            if user.role == 'trainer':
+                return redirect(url_for('trainer.dashboard'))
             return redirect(url_for('admin.dashboard'))
         flash('Usuario o contraseña inválidos')
     return render_template('login.html', form=form)

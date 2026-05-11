@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from backend import db
-from backend.models import Client, Payment, Membership, Routine, Progress, User, Gym, CheckIn, EmailSettings, GroupClass, ClassReservation
+from backend.models import Client, Payment, Membership, Routine, Progress, User, Gym, CheckIn, EmailSettings, GroupClass, ClassReservation, Trainer, Product, StockMovement
 from backend.forms import GymForm
 from backend.utils.membership import effective_membership_price
 from backend.utils.tenant import get_current_gym_id, slugify_gym_name
@@ -479,3 +479,131 @@ def send_reminders():
         for e in result['errors']:
             flash(e, 'danger')
     return redirect(url_for('admin.dashboard'))
+
+
+# === Staff / Trainers ===
+
+@admin.route('/trainers', methods=['GET', 'POST'])
+@login_required
+def trainers():
+    if current_user.role == 'user':
+        return redirect(url_for('main.client_dashboard'))
+    gym_id = get_current_gym_id()
+
+    if request.method == 'POST' and current_user.role == 'admin':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        if username and email and password:
+            existing = User.query.filter((User.username == username) | (User.email == email)).first()
+            if existing:
+                flash('Ya existe un usuario con ese username o email.', 'danger')
+            else:
+                user = User(username=username, email=email, role='trainer', gym_id=gym_id)
+                user.set_password(password)
+                db.session.add(user)
+                db.session.flush()
+                t = Trainer(user_id=user.id)
+                db.session.add(t)
+                db.session.commit()
+                flash(f'Trainer "{username}" creado.', 'success')
+        return redirect(url_for('admin.trainers'))
+
+    trainer_list = Trainer.query.join(User).filter(User.gym_id == gym_id).all()
+    unassigned = Client.query.filter(Client.gym_id == gym_id, ~Client.trainers.any()).all()
+    return render_template('trainers.html', trainers=trainer_list, unassigned=unassigned)
+
+
+@admin.route('/trainer/assign/<int:trainer_id>', methods=['POST'])
+@login_required
+def assign_clients(trainer_id):
+    if current_user.role != 'admin':
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('main.index'))
+    t = Trainer.query.get_or_404(trainer_id)
+    client_ids = request.form.getlist('client_ids')
+    t.clients = Client.query.filter(Client.id.in_(client_ids)).all() if client_ids else []
+    db.session.commit()
+    flash('Clientes asignados.', 'success')
+    return redirect(url_for('admin.trainers'))
+
+
+@admin.route('/trainer/delete/<int:trainer_id>', methods=['POST'])
+@login_required
+def delete_trainer(trainer_id):
+    if current_user.role != 'admin':
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('main.index'))
+    t = Trainer.query.get_or_404(trainer_id)
+    user = User.query.get(t.user_id)
+    t.clients = []
+    db.session.delete(t)
+    if user:
+        db.session.delete(user)
+    db.session.commit()
+    flash('Trainer eliminado.', 'success')
+    return redirect(url_for('admin.trainers'))
+
+
+# === Inventario ===
+
+@admin.route('/products', methods=['GET', 'POST'])
+@login_required
+def products():
+    if current_user.role == 'user':
+        return redirect(url_for('main.client_dashboard'))
+    gym_id = get_current_gym_id()
+
+    if request.method == 'POST' and current_user.role == 'admin':
+        name = request.form.get('name')
+        if name:
+            p = Product(gym_id=gym_id, name=name, description=request.form.get('description', ''),
+                        price=float(request.form.get('price', 0)), stock=int(request.form.get('stock', 0)),
+                        category=request.form.get('category', ''))
+            db.session.add(p)
+            db.session.commit()
+            flash(f'Producto "{name}" creado.', 'success')
+        return redirect(url_for('admin.products'))
+
+    product_list = Product.query.filter_by(gym_id=gym_id).order_by(Product.name).all()
+    low_stock = [p for p in product_list if 0 < p.stock <= 5]
+    return render_template('products.html', products=product_list, low_stock=low_stock)
+
+
+@admin.route('/product/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_product(id):
+    if current_user.role != 'admin':
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('main.index'))
+    p = Product.query.filter_by(id=id, gym_id=get_current_gym_id()).first_or_404()
+    StockMovement.query.filter_by(product_id=p.id).delete()
+    db.session.delete(p)
+    db.session.commit()
+    flash('Producto eliminado.', 'success')
+    return redirect(url_for('admin.products'))
+
+
+@admin.route('/product/movements/<int:product_id>', methods=['GET', 'POST'])
+@login_required
+def product_movements(product_id):
+    if current_user.role == 'user':
+        return redirect(url_for('main.client_dashboard'))
+    p = Product.query.filter_by(id=product_id, gym_id=get_current_gym_id()).first_or_404()
+
+    if request.method == 'POST' and current_user.role == 'admin':
+        mov_type = request.form.get('type')
+        qty = int(request.form.get('quantity', 1))
+        desc = request.form.get('description', '')
+        if mov_type == 'salida' and qty > p.stock:
+            flash(f'Stock insuficiente. Disponible: {p.stock}', 'danger')
+        else:
+            m = StockMovement(product_id=p.id, type=mov_type, quantity=qty, description=desc)
+            p.stock = p.stock + qty if mov_type == 'entrada' else p.stock - qty
+            db.session.add(m)
+            db.session.commit()
+            flash(f'Movimiento registrado. Stock actual: {p.stock}', 'success')
+        return redirect(url_for('admin.product_movements', product_id=product_id))
+
+    movements = StockMovement.query.filter_by(product_id=p.id).order_by(StockMovement.created_at.desc()).all()
+    return render_template('product_movements.html', product=p, movements=movements)

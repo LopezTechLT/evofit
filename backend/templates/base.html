@@ -31,24 +31,28 @@
                     <li class="nav-item"><a class="nav-link" href="/landing#beneficios">Beneficios</a></li>
                     <li class="nav-item"><a class="nav-link" href="/landing#planes">Planes</a></li>
                     <li class="nav-item"><a class="nav-link" href="/landing#contacto">Contacto</a></li>
-                    {% if current_user.is_authenticated %}
-                        {% if current_user.role == 'user' %}
-                            <li class="nav-item"><a class="nav-link" href="/home" onclick="history.pushState({}, '', '/cliente'); return true">Entrenar</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.client_dashboard') }}">Mi perfil</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.clases') }}">Clases</a></li>
-                        {% else %}
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.clients') }}">Clientes</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.dashboard') }}">Panel</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.escaner') }}">QR</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.checkins') }}">Entradas</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.classes') }}">Clases</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.reports') }}">Reportes</a></li>
-                            {% if current_user.is_super_admin %}
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.gyms') }}">Gyms</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.pending_gyms') }}">Aprobar gyms</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.email_config') }}">Email</a></li>
-                            {% endif %}
-                        {% endif %}
+    {% if current_user.is_authenticated %}
+        {% if current_user.role == 'user' %}
+            <li class="nav-item"><a class="nav-link" href="/home" onclick="history.pushState({}, '', '/cliente'); return true">Entrenar</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.client_dashboard') }}">Mi perfil</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.clases') }}">Clases</a></li>
+        {% elif current_user.role == 'trainer' %}
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('trainer.dashboard') }}">Mis clientes</a></li>
+        {% else %}
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.clients') }}">Clientes</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.dashboard') }}">Panel</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.escaner') }}">QR</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.checkins') }}">Entradas</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.classes') }}">Clases</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.reports') }}">Reportes</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.products') }}">Inventario</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.trainers') }}">Staff</a></li>
+            {% if current_user.is_super_admin %}
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.gyms') }}">Gyms</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.pending_gyms') }}">Aprobar gyms</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.email_config') }}">Email</a></li>
+            {% endif %}
+        {% endif %}
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
                     {% else %}
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Iniciar sesión</a></li>

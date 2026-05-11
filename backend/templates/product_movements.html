@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <h2 class="mb-0">{{ product.name }}</h2>
+    <a href="{{ url_for('admin.products') }}" class="btn btn-outline-secondary">Volver</a>
+</div>
+<p class="text-muted">Stock actual: <strong>{{ product.stock }}</strong> · Precio: ${{ '%.2f'|format(product.price) }}</p>
+
+{% if current_user.role == 'admin' %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Registrar movimiento</h5>
+        <form method="POST" class="row g-2">
+            <div class="col-md-2">
+                <select name="type" class="form-select" required>
+                    <option value="entrada">Entrada</option>
+                    <option value="salida">Salida</option>
+                </select>
+            </div>
+            <div class="col-md-2"><input name="quantity" type="number" class="form-control" placeholder="Cantidad" min="1" required></div>
+            <div class="col-md-6"><input name="description" class="form-control" placeholder="Descripción (ej: venta, reposición)"></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-dark w-100">Registrar</button></div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<h5>Historial de movimientos</h5>
+<div class="table-responsive">
+    <table class="table table-sm">
+        <thead><tr><th>Tipo</th><th>Cantidad</th><th>Descripción</th><th>Fecha</th></tr></thead>
+        <tbody>
+            {% for m in movements %}
+            <tr>
+                <td>
+                    {% if m.type == 'entrada' %}
+                    <span class="badge bg-success">Entrada</span>
+                    {% else %}
+                    <span class="badge bg-danger">Salida</span>
+                    {% endif %}
+                </td>
+                <td>{{ m.quantity }}</td>
+                <td>{{ m.description or '—' }}</td>
+                <td>{{ m.created_at.strftime('%d/%m/%Y %H:%M') if m.created_at else '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-muted">Sin movimientos</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

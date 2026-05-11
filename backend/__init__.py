@@ -17,11 +17,12 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
 
-    from backend.routes import auth, main, admin, api
+    from backend.routes import auth, main, admin, api, trainer
     app.register_blueprint(auth)
     app.register_blueprint(main)
     app.register_blueprint(admin)
     app.register_blueprint(api)
+    app.register_blueprint(trainer)
 
     frontend_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'dist')
     if os.path.isdir(os.path.join(frontend_dist, 'assets')):
