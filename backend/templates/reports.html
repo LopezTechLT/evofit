@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Reportes</h2>
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title">Clientes</h5>
+                <p class="text-muted small">Exporta todos los clientes con sus datos</p>
+                <a href="{{ url_for('admin.export', type='clientes') }}" class="btn btn-dark">Descargar Excel</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title">Pagos</h5>
+                <p class="text-muted small">Historial de pagos con montos y fechas</p>
+                <a href="{{ url_for('admin.export', type='pagos') }}" class="btn btn-dark">Descargar Excel</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title">Entradas (Check-ins)</h5>
+                <p class="text-muted small">Registro de accesos al gimnasio</p>
+                <a href="{{ url_for('admin.export', type='entradas') }}" class="btn btn-dark">Descargar Excel</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4 class="mt-4 mb-3">Vista previa imprimible (PDF)</h4>
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title">Listado de clientes</h5>
+                <p class="text-muted small">Versión para imprimir o guardar como PDF</p>
+                <a href="{{ url_for('main.print_clients') }}" target="_blank" class="btn btn-outline-secondary">Abrir vista</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

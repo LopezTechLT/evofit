@@ -28,17 +28,12 @@ def dashboard():
     if current_user.role == 'user':
         return redirect(url_for('main.client_dashboard'))
     gym_id = get_current_gym_id()
+    now = datetime.utcnow()
     # Active clients
     active_clients = Client.query.filter(Client.gym_id == gym_id, Client.membership_status.in_(['active', 'activo'])).count()
-
-    # Expired memberships
-    expired = Membership.query.filter(Membership.gym_id == gym_id, Membership.end_date < datetime.utcnow()).count()
-    
-    # Monthly revenue
-    month_start = datetime.utcnow().replace(day=1)
+    expired = Membership.query.filter(Membership.gym_id == gym_id, Membership.end_date < now).count()
+    month_start = now.replace(day=1)
     monthly_revenue = db.session.query(func.sum(Payment.amount)).filter(Payment.gym_id == gym_id, Payment.date >= month_start).scalar() or 0
-    
-    # Total clients in the system
     total_clients = Client.query.filter_by(gym_id=gym_id).count()
 
     memberships = Membership.query.filter_by(gym_id=gym_id).all()
@@ -51,14 +46,84 @@ def dashboard():
             paid_memberships += 1
         else:
             pending_memberships += 1
-    
-    return render_template('dashboard.html', 
-                         active_clients=active_clients,
-                         expired=expired,
-                         monthly_revenue=monthly_revenue,
-                         total_clients=total_clients,
-                         paid_memberships=paid_memberships,
-                         pending_memberships=pending_memberships)
+
+    # --- Chart data ---
+    one_year_ago = now - timedelta(days=365)
+    thirty_days_ago = now - timedelta(days=30)
+
+    # Monthly revenue last 12 months
+    rev_rows = db.session.query(
+        func.strftime('%Y-%m', Payment.date).label('month'),
+        func.sum(Payment.amount).label('total')
+    ).filter(Payment.gym_id == gym_id, Payment.date >= one_year_ago).group_by('month').order_by('month').all()
+    rev_months = [r.month for r in rev_rows]
+    rev_totals = [float(r.total) for r in rev_rows]
+
+    # Check-ins last 30 days
+    ci_rows = db.session.query(
+        func.date(CheckIn.timestamp).label('day'),
+        func.count(CheckIn.id).label('count')
+    ).filter(CheckIn.gym_id == gym_id, CheckIn.timestamp >= thirty_days_ago).group_by('day').order_by('day').all()
+    ci_days = [r.day for r in ci_rows]
+    ci_counts = [r.count for r in ci_rows]
+
+    # New clients per month
+    nc_rows = db.session.query(
+        func.strftime('%Y-%m', Client.registration_date).label('month'),
+        func.count(Client.id).label('count')
+    ).filter(Client.gym_id == gym_id).group_by('month').order_by('month').all()
+    nc_months = [r.month for r in nc_rows]
+    nc_counts = [r.count for r in nc_rows]
+
+    # Goal distribution
+    goal_rows = db.session.query(Client.goal, func.count(Client.id)).filter(
+        Client.gym_id == gym_id, Client.goal.isnot(None), Client.goal != ''
+    ).group_by(Client.goal).all()
+    goal_labels = [r[0] for r in goal_rows]
+    goal_data = [r[1] for r in goal_rows]
+
+    return render_template('dashboard.html',
+                         active_clients=active_clients, expired=expired,
+                         monthly_revenue=monthly_revenue, total_clients=total_clients,
+                         paid_memberships=paid_memberships, pending_memberships=pending_memberships,
+                         rev_months=rev_months, rev_totals=rev_totals,
+                         ci_days=ci_days, ci_counts=ci_counts,
+                         nc_months=nc_months, nc_counts=nc_counts,
+                         goal_labels=goal_labels, goal_data=goal_data)
+
+
+@admin.route('/reports')
+@login_required
+def reports():
+    if current_user.role == 'user':
+        return redirect(url_for('main.client_dashboard'))
+    return render_template('reports.html')
+
+
+@admin.route('/export/<string:type>')
+@login_required
+def export(type):
+    if current_user.role == 'user':
+        return redirect(url_for('main.client_dashboard'))
+    from flask import Response
+    from backend.utils.reports import export_clients_excel, export_payments_excel, export_checkins_excel
+    gym_id = get_current_gym_id()
+    filename_map = {'clientes': ('clientes.xlsx', export_clients_excel),
+                    'pagos': ('pagos.xlsx', export_payments_excel),
+                    'entradas': ('entradas.xlsx', export_checkins_excel)}
+    if type not in filename_map:
+        flash('Tipo de reporte inválido.', 'danger')
+        return redirect(url_for('admin.reports'))
+    fn, exporter = filename_map[type]
+    if type == 'clientes':
+        data = Client.query.filter_by(gym_id=gym_id).order_by(Client.name).all()
+    elif type == 'pagos':
+        data = Payment.query.filter_by(gym_id=gym_id).order_by(Payment.date.desc()).all()
+    else:
+        data = CheckIn.query.filter_by(gym_id=gym_id).order_by(CheckIn.timestamp.desc()).all()
+    buf = exporter(data)
+    return Response(buf.getvalue(), mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    headers={'Content-Disposition': f'attachment; filename={fn}'})
 
 @admin.route('/memberships')
 @login_required

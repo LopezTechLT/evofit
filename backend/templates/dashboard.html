@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-4">
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
     <h2 class="mb-0">Panel administrador</h2>
     <div class="d-flex gap-2">
         <a href="{{ url_for('admin.memberships') }}" class="btn btn-outline-secondary">Ver membresías</a>
+        <a href="{{ url_for('admin.reports') }}" class="btn btn-outline-secondary">Reportes</a>
         {% if current_user.is_super_admin %}
             <a href="{{ url_for('admin.email_config') }}" class="btn btn-outline-secondary">Email</a>
             <form method="POST" action="{{ url_for('admin.send_reminders') }}" style="display:inline">
@@ -14,77 +14,113 @@
     </div>
 </div>
 <div class="row">
-    <div class="col-md-3">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Clientes activos</h5>
-                <p class="card-text">{{ active_clients }}</p>
-            </div>
+    <div class="col-md-3 mb-3">
+        <div class="card"><div class="card-body"><h5 class="card-title">Clientes activos</h5><p class="card-text fs-3">{{ active_clients }}</p></div></div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card"><div class="card-body"><h5 class="card-title">Membresías vencidas</h5><p class="card-text fs-3">{{ expired }}</p></div></div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card"><div class="card-body"><h5 class="card-title">Ingresos del mes</h5><p class="card-text fs-3">${{ "%.2f"|format(monthly_revenue) }}</p></div></div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card"><div class="card-body"><h5 class="card-title">Clientes totales</h5><p class="card-text fs-3">{{ total_clients }}</p></div></div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card p-3">
+            <h5 class="card-title">Estado de pago de membresías</h5>
+            <div style="position:relative;height:220px"><canvas id="paymentStatusChart"></canvas></div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Membresías vencidas</h5>
-                <p class="card-text">{{ expired }}</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Ingresos del mes</h5>
-                <p class="card-text">${{ "%.2f"|format(monthly_revenue) }}</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Clientes totales</h5>
-                <p class="card-text">{{ total_clients }}</p>
-            </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card p-3">
+            <h5 class="card-title">Metas de clientes</h5>
+            <div style="position:relative;height:220px"><canvas id="goalChart"></canvas></div>
         </div>
     </div>
 </div>
-<div class="row mt-4">
-    <div class="col-lg-6">
-        <div class="card p-4">
-            <h5 class="card-title">Estado de pago de membresías</h5>
-            <div style="position: relative; height: 240px;">
-                <canvas id="paymentStatusChart"></canvas>
-            </div>
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card p-3">
+            <h5 class="card-title">Ingresos mensuales (últimos 12 meses)</h5>
+            <div style="position:relative;height:220px"><canvas id="revenueChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card p-3">
+            <h5 class="card-title">Check-ins diarios (últimos 30 días)</h5>
+            <div style="position:relative;height:220px"><canvas id="checkinChart"></canvas></div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card p-3">
+            <h5 class="card-title">Clientes nuevos por mes</h5>
+            <div style="position:relative;height:220px"><canvas id="newClientsChart"></canvas></div>
         </div>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const paymentStatusCanvas = document.getElementById('paymentStatusChart');
-    if (paymentStatusCanvas && window.Chart) {
-        const existingChart = Chart.getChart ? Chart.getChart(paymentStatusCanvas) : null;
-        if (existingChart) existingChart.destroy();
+const colors = ['#22c55e','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316'];
 
-        new Chart(paymentStatusCanvas, {
-            type: 'doughnut',
-            data: {
-                labels: ['Pagadas', 'Pendientes'],
-                datasets: [{
-                    data: [{{ paid_memberships }}, {{ pending_memberships }}],
-                    backgroundColor: ['#22c55e', '#f59e0b'],
-                    borderColor: ['#ffffff', '#ffffff'],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
-    }
+function initChart(id, type, labels, data, label, bgColor) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    Chart.getChart(canvas)?.destroy();
+    new Chart(canvas, {
+        type: type,
+        data: {
+            labels: labels,
+            datasets: [{
+                label: label,
+                data: data,
+                backgroundColor: bgColor || colors.slice(0, labels.length),
+                borderColor: '#ffffff',
+                borderWidth: type === 'doughnut' ? 2 : 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+            scales: type === 'bar' ? { y: { beginAtZero: true } } : undefined
+        }
+    });
+}
+
+initChart('paymentStatusChart', 'doughnut', ['Pagadas','Pendientes'], [{{ paid_memberships }},{{ pending_memberships }}]);
+initChart('goalChart', 'doughnut', {{ goal_labels | tojson }}, {{ goal_data | tojson }});
+initChart('revenueChart', 'bar', {{ rev_months | tojson }}, {{ rev_totals | tojson }}, 'Ingresos');
+initChart('newClientsChart', 'bar', {{ nc_months | tojson }}, {{ nc_counts | tojson }}, 'Nuevos clientes');
+
+// Check-ins: line chart
+const ciCanvas = document.getElementById('checkinChart');
+if (ciCanvas && window.Chart) {
+    Chart.getChart(ciCanvas)?.destroy();
+    new Chart(ciCanvas, {
+        type: 'line',
+        data: {
+            labels: {{ ci_days | tojson }},
+            datasets: [{
+                label: 'Check-ins',
+                data: {{ ci_counts | tojson }},
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59,130,246,0.1)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+}
 </script>
 {% endblock %}

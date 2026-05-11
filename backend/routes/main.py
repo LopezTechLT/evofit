@@ -350,6 +350,16 @@ def reserve_class(class_id):
     return redirect(url_for('main.clases'))
 
 
+@main.route('/print/clientes')
+@login_required
+def print_clients():
+    gym_id = get_current_gym_id()
+    from backend.models import Gym as GymModel
+    gym = GymModel.query.get(gym_id)
+    clients = Client.query.filter_by(gym_id=gym_id).order_by(Client.name).all()
+    return render_template('print_clients.html', clients=clients, gym_name=gym.name if gym else '')
+
+
 @main.route('/service-worker.js')
 def service_worker():
     resp = make_response(current_app.send_static_file('service-worker.js'))
