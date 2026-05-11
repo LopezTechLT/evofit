@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, send_from_directory
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, send_from_directory, make_response, current_app
 from flask_login import login_required, current_user
 from backend import db
 from backend.models import Client, Membership, Payment, Routine, Progress
@@ -299,6 +299,14 @@ def add_progress(client_id):
         return redirect(url_for('main.client_detail', id=client_id))
     progress_list = Progress.query.filter_by(client_id=client_id, gym_id=gym_id).order_by(Progress.date.desc()).all()
     return render_template('add_progress.html', form=form, client_id=client_id, progress_list=progress_list)
+
+@main.route('/service-worker.js')
+def service_worker():
+    resp = make_response(current_app.send_static_file('service-worker.js'))
+    resp.headers['Service-Worker-Allowed'] = '/'
+    resp.headers['Cache-Control'] = 'no-cache'
+    return resp
+
 
 @main.route('/qr_scan', methods=['POST'])
 def qr_scan():
