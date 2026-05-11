@@ -42,7 +42,7 @@ def _create_client_for_user(user, form=None):
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        return redirect('/landing')
     form = LoginForm()
     gyms = get_gyms_for_select()
     form.gym_slug.choices = [(g.slug, g.name) for g in gyms]
@@ -58,7 +58,7 @@ def login():
             login_user(user)
             if user.role == 'user':
                 _create_client_for_user(user)
-                return redirect('/')
+                return redirect('/landing')
             return redirect(url_for('admin.dashboard'))
         flash('Usuario o contraseña inválidos')
     return render_template('login.html', form=form)
@@ -66,7 +66,7 @@ def login():
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        return redirect('/landing')
     form = RegistrationForm()
     gyms = get_gyms_for_select()
     form.gym_slug.choices = [(g.slug, g.name) for g in gyms]
@@ -111,7 +111,7 @@ def register():
 @auth.route('/register_gym', methods=['GET', 'POST'])
 def register_gym():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        return redirect('/landing')
     form = GymRegistrationForm()
     if form.validate_on_submit():
         slug = slugify_gym_name(form.gym_slug.data) if form.gym_slug.data else slugify_gym_name(form.gym_name.data)
