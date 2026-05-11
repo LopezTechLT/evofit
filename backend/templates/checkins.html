@@ -15,17 +15,28 @@
 <div class="table-responsive">
     <table class="table table-striped">
         <thead>
-            <tr><th>Cliente</th><th>Hora</th><th>Fecha</th></tr>
+            <tr><th>Cliente</th><th>Hora local</th><th>Fecha</th></tr>
         </thead>
         <tbody>
             {% for c in checkins %}
             <tr>
                 <td>{{ c.client.name if c.client else 'Eliminado' }}</td>
-                <td>{{ c.timestamp.strftime('%H:%M') }}</td>
-                <td>{{ c.timestamp.strftime('%Y-%m-%d') }}</td>
+                <td><span class="local-time" data-utc="{{ c.timestamp.strftime('%Y-%m-%dT%H:%M:%S') }}Z"></span></td>
+                <td><span class="local-date" data-utc="{{ c.timestamp.strftime('%Y-%m-%dT%H:%M:%S') }}Z"></span></td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+
+<script>
+document.querySelectorAll('.local-time').forEach(el => {
+    const d = new Date(el.dataset.utc);
+    el.textContent = d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+});
+document.querySelectorAll('.local-date').forEach(el => {
+    const d = new Date(el.dataset.utc);
+    el.textContent = d.toLocaleDateString('es-CO');
+});
+</script>
 {% endblock %}
