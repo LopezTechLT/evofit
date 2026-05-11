@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, make_response, current_app
 from flask_login import login_required, current_user
 from backend import db
-from backend.models import Client, Membership, Payment, Routine, Progress, CheckIn
+from backend.models import Client, Membership, Payment, Routine, Progress, CheckIn, GroupClass, ClassReservation
 from backend.forms import ClientForm, MembershipForm, PaymentForm, RoutineForm, ProgressForm
 from backend.utils.membership import effective_membership_price
 from backend.utils.tenant import get_current_gym_id
@@ -301,6 +301,53 @@ def checkins():
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     todays_count = CheckIn.query.filter(CheckIn.gym_id == gym_id, CheckIn.timestamp >= today_start).count()
     return render_template('checkins.html', checkins=checks, now=datetime.utcnow(), todays_count=todays_count)
+
+
+@main.route('/clases')
+@login_required
+def clases():
+    gym_id = get_current_gym_id()
+    days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+    classes_list = GroupClass.query.filter_by(gym_id=gym_id, active=True).order_by(GroupClass.day_of_week, GroupClass.start_time).all()
+    today = datetime.utcnow().date()
+    client = _get_current_client()
+    class_data = []
+    for gc in classes_list:
+        reserved = ClassReservation.query.filter_by(group_class_id=gc.id, date=today).count()
+        user_reserved = ClassReservation.query.filter_by(group_class_id=gc.id, client_id=client.id, date=today).first() if client else None
+        class_data.append({
+            'class': gc,
+            'reserved': reserved,
+            'available': gc.capacity - reserved,
+            'user_reserved': user_reserved is not None,
+        })
+    return render_template('clases.html', classes=class_data, days=days, now=datetime.utcnow())
+
+
+@main.route('/clase/reserve/<int:class_id>', methods=['POST'])
+@login_required
+def reserve_class(class_id):
+    client = _get_current_client()
+    if not client:
+        flash('No tienes perfil de cliente.', 'danger')
+        return redirect(url_for('main.clases'))
+    gc = GroupClass.query.filter_by(id=class_id, gym_id=get_current_gym_id()).first_or_404()
+    today = datetime.utcnow().date()
+    existing = ClassReservation.query.filter_by(group_class_id=gc.id, client_id=client.id, date=today).first()
+    if existing:
+        db.session.delete(existing)
+        db.session.commit()
+        flash('Reserva cancelada.', 'info')
+    else:
+        count = ClassReservation.query.filter_by(group_class_id=gc.id, date=today).count()
+        if count >= gc.capacity:
+            flash('Clase llena.', 'danger')
+        else:
+            r = ClassReservation(group_class_id=gc.id, client_id=client.id, date=today)
+            db.session.add(r)
+            db.session.commit()
+            flash('Reserva confirmada.', 'success')
+    return redirect(url_for('main.clases'))
 
 
 @main.route('/service-worker.js')

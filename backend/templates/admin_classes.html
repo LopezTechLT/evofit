@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <h2 class="mb-0">Clases grupales</h2>
+</div>
+
+{% if current_user.role == 'admin' %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Nueva clase</h5>
+        <form method="POST" class="row g-2">
+            <div class="col-md-3">
+                <input name="name" class="form-control" placeholder="Nombre" required>
+            </div>
+            <div class="col-md-2">
+                <select name="day_of_week" class="form-select">
+                    {% for d in range(7) %}
+                    <option value="{{ d }}">{{ days[d] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input name="start_time" type="time" class="form-control" value="08:00">
+            </div>
+            <div class="col-md-1">
+                <input name="duration" type="number" class="form-control" placeholder="Min" value="60">
+            </div>
+            <div class="col-md-1">
+                <input name="capacity" type="number" class="form-control" placeholder="Cupo" value="20">
+            </div>
+            <div class="col-md-3">
+                <input name="description" class="form-control" placeholder="Descripción (opcional)">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-dark">Crear clase</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{% set week = classes | groupby('class.day_of_week') %}
+{% for d in range(7) %}
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">{{ days[d] }}</h5>
+        {% set day_items = classes | selectattr("class.day_of_week", "equalto", d) | list %}
+        {% if day_items %}
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr><th>Nombre</th><th>Horario</th><th>Duración</th><th>Cupo</th><th>Disponible</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for item in day_items %}
+                    {% set gc = item.class %}
+                    <tr>
+                        <td>{{ gc.name }}</td>
+                        <td>{{ gc.start_time }}</td>
+                        <td>{{ gc.duration_minutes }} min</td>
+                        <td>{{ gc.capacity }}</td>
+                        <td>
+                            {% if item.available > 0 %}
+                                <span class="badge bg-success">{{ item.available }}</span>
+                            {% else %}
+                                <span class="badge bg-danger">Llena</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('admin.class_reservations', class_id=gc.id) }}" class="btn btn-sm btn-outline-secondary">Reservas</a>
+                            {% if current_user.role == 'admin' %}
+                            <form method="POST" action="{{ url_for('admin.delete_class', id=gc.id) }}" style="display:inline" onsubmit="return confirm('¿Eliminar esta clase?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0 small">Sin clases este día</p>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

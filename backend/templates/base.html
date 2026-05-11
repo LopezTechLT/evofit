@@ -35,11 +35,13 @@
                         {% if current_user.role == 'user' %}
                             <li class="nav-item"><a class="nav-link" href="/home" onclick="history.pushState({}, '', '/cliente'); return true">Entrenar</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('main.client_dashboard') }}">Mi perfil</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.clases') }}">Clases</a></li>
                         {% else %}
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('main.clients') }}">Clientes</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.dashboard') }}">Panel</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('main.escaner') }}">QR</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('main.checkins') }}">Entradas</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.classes') }}">Clases</a></li>
                             {% if current_user.is_super_admin %}
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.gyms') }}">Gyms</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.pending_gyms') }}">Aprobar gyms</a></li>

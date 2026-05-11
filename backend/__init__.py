@@ -48,6 +48,30 @@ def create_app():
         if 'day_of_week' not in cols_routine:
             db.session.execute(db.text('ALTER TABLE routine ADD COLUMN day_of_week INTEGER'))
             db.session.commit()
+        if 'group_class' not in tables:
+            db.session.execute(db.text('''
+                CREATE TABLE group_class (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    gym_id INTEGER REFERENCES gym(id),
+                    name VARCHAR(150) NOT NULL,
+                    description TEXT DEFAULT '',
+                    day_of_week INTEGER NOT NULL,
+                    start_time VARCHAR(5) NOT NULL,
+                    duration_minutes INTEGER DEFAULT 60,
+                    capacity INTEGER DEFAULT 20,
+                    active BOOLEAN DEFAULT 1
+                )
+            '''))
+            db.session.execute(db.text('''
+                CREATE TABLE class_reservation (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    group_class_id INTEGER NOT NULL REFERENCES group_class(id),
+                    client_id INTEGER NOT NULL REFERENCES client(id),
+                    date DATE NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            '''))
+            db.session.commit()
         if 'email_settings' not in tables:
             db.session.execute(db.text('''
                 CREATE TABLE email_settings (

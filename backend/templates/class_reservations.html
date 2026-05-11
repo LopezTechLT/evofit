@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <h2 class="mb-0">Reservas: {{ gc.name }}</h2>
+    <a href="{{ url_for('admin.classes') }}" class="btn btn-outline-secondary">Volver</a>
+</div>
+<p class="text-muted">{{ gc.start_time }} · {{ gc.duration_minutes }} min · Cupo {{ gc.capacity }}</p>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr><th>Cliente</th><th>Fecha</th><th>Reservada</th></tr>
+        </thead>
+        <tbody>
+            {% for r in reservations %}
+            <tr>
+                <td>{{ r.client.name }} {{ r.client.last_name or '' }}</td>
+                <td>{{ r.date.strftime('%d/%m/%Y') }}</td>
+                <td>{{ r.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-muted">Sin reservas</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

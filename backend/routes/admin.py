@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from backend import db
-from backend.models import Client, Payment, Membership, Routine, Progress, User, Gym, CheckIn, EmailSettings
+from backend.models import Client, Payment, Membership, Routine, Progress, User, Gym, CheckIn, EmailSettings, GroupClass, ClassReservation
 from backend.forms import GymForm
 from backend.utils.membership import effective_membership_price
 from backend.utils.tenant import get_current_gym_id, slugify_gym_name
@@ -293,6 +293,62 @@ def delete_gym(gym_id):
     db.session.commit()
     flash(f'Gimnasio "{gym_name}" eliminado correctamente.', 'success')
     return redirect(url_for('admin.gyms'))
+
+
+@admin.route('/classes', methods=['GET', 'POST'])
+@login_required
+def classes():
+    if current_user.role == 'user':
+        return redirect(url_for('main.client_dashboard'))
+    gym_id = get_current_gym_id()
+    days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+
+    if request.method == 'POST' and current_user.role == 'admin':
+        name = request.form.get('name')
+        day = int(request.form.get('day_of_week', 0))
+        start = request.form.get('start_time', '08:00')
+        duration = int(request.form.get('duration', 60))
+        capacity = int(request.form.get('capacity', 20))
+        desc = request.form.get('description', '')
+        if name:
+            gc = GroupClass(gym_id=gym_id, name=name, description=desc, day_of_week=day, start_time=start, duration_minutes=duration, capacity=capacity)
+            db.session.add(gc)
+            db.session.commit()
+            flash(f'Clase "{name}" creada.', 'success')
+        return redirect(url_for('admin.classes'))
+
+    classes_list = GroupClass.query.filter_by(gym_id=gym_id).order_by(GroupClass.day_of_week, GroupClass.start_time).all()
+    today = datetime.utcnow().date()
+    # Count reservations for each class today
+    class_data = []
+    for gc in classes_list:
+        reserved = ClassReservation.query.filter_by(group_class_id=gc.id, date=today).count()
+        class_data.append({'class': gc, 'reserved': reserved, 'available': gc.capacity - reserved})
+    return render_template('admin_classes.html', classes=class_data, days=days, now=datetime.utcnow())
+
+
+@admin.route('/class/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_class(id):
+    if current_user.role != 'admin':
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('main.index'))
+    gc = GroupClass.query.filter_by(id=id, gym_id=get_current_gym_id()).first_or_404()
+    ClassReservation.query.filter_by(group_class_id=gc.id).delete()
+    db.session.delete(gc)
+    db.session.commit()
+    flash('Clase eliminada.', 'success')
+    return redirect(url_for('admin.classes'))
+
+
+@admin.route('/class_reservations/<int:class_id>')
+@login_required
+def class_reservations(class_id):
+    if current_user.role == 'user':
+        return redirect(url_for('main.client_dashboard'))
+    gc = GroupClass.query.filter_by(id=class_id, gym_id=get_current_gym_id()).first_or_404()
+    reservations = ClassReservation.query.filter_by(group_class_id=gc.id).order_by(ClassReservation.date.desc()).all()
+    return render_template('class_reservations.html', gc=gc, reservations=reservations)
 
 
 @admin.route('/pending_gyms')

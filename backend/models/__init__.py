@@ -296,6 +296,29 @@ class FeedPost(db.Model):
     user = db.relationship('User', backref='feed_posts')
 
 
+class GroupClass(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    gym_id = db.Column(db.Integer, db.ForeignKey('gym.id'), nullable=True)
+    name = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text, default='')
+    day_of_week = db.Column(db.Integer, nullable=False)  # 0=Lunes..6=Domingo
+    start_time = db.Column(db.String(5), nullable=False)  # "09:00"
+    duration_minutes = db.Column(db.Integer, default=60)
+    capacity = db.Column(db.Integer, default=20)
+    active = db.Column(db.Boolean, default=True)
+    gym = db.relationship('Gym', backref='group_classes')
+    reservations = db.relationship('ClassReservation', backref='group_class', lazy=True)
+
+
+class ClassReservation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    group_class_id = db.Column(db.Integer, db.ForeignKey('group_class.id'), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)  # día específico de la clase
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    client = db.relationship('Client', backref='class_reservations')
+
+
 class EmailSettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     smtp_host = db.Column(db.String(200), default='smtp.gmail.com')

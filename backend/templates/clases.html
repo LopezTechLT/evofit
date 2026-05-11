@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-3">Clases grupales</h2>
+
+{% for d in range(7) %}
+{% set day_items = classes | selectattr("class.day_of_week", "equalto", d) | list %}
+{% if day_items %}
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">{{ days[d] }}</h5>
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr><th>Clase</th><th>Horario</th><th>Duración</th><th>Disponible</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for item in day_items %}
+                    {% set gc = item.class %}
+                    <tr>
+                        <td>
+                            <strong>{{ gc.name }}</strong>
+                            {% if gc.description %}<br><small class="text-muted">{{ gc.description }}</small>{% endif %}
+                        </td>
+                        <td>{{ gc.start_time }}</td>
+                        <td>{{ gc.duration_minutes }} min</td>
+                        <td>
+                            {% if item.available > 0 %}
+                                <span class="badge bg-success">{{ item.available }}</span>
+                            {% else %}
+                                <span class="badge bg-danger">Llena</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="POST" action="{{ url_for('main.reserve_class', class_id=gc.id) }}">
+                                {% if item.user_reserved %}
+                                <button type="submit" class="btn btn-sm btn-warning">Cancelar</button>
+                                {% elif item.available > 0 %}
+                                <button type="submit" class="btn btn-sm btn-dark">Reservar</button>
+                                {% else %}
+                                <button type="submit" class="btn btn-sm btn-secondary" disabled>Llena</button>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}
