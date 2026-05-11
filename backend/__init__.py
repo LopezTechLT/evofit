@@ -40,6 +40,14 @@ def create_app():
         os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance'), exist_ok=True)
         db.create_all()
 
+        # Migrate: add day_of_week column if missing
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        cols = [c['name'] for c in inspector.get_columns('routine')]
+        if 'day_of_week' not in cols:
+            db.session.execute(db.text('ALTER TABLE routine ADD COLUMN day_of_week INTEGER'))
+            db.session.commit()
+
         from backend.models import Gym, User
         if not Gym.query.first():
             default_gym = Gym(name='Gym Principal', slug='principal', plan='starter', approved=True)

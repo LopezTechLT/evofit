@@ -255,7 +255,11 @@ def add_routine(client_id):
         except Exception:
             flash('Ejercicios inválidos. Agrega al menos 1 ejercicio con el formulario.', 'danger')
     routines = Routine.query.filter_by(client_id=client_id, gym_id=gym_id).order_by(Routine.day_of_week).all()
-    return render_template('add_routine.html', form=form, client_id=client_id, routines=routines)
+    routines_by_day = {}
+    for r in routines:
+        d = r.day_of_week if r.day_of_week is not None else -1
+        routines_by_day.setdefault(d, []).append(r)
+    return render_template('add_routine.html', form=form, client_id=client_id, routines=routines, routines_by_day=routines_by_day)
 
 @main.route('/add_progress/<int:client_id>', methods=['GET', 'POST'])
 @login_required

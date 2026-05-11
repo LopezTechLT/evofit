@@ -52,13 +52,13 @@
     </div>
 </form>
 
-{% if routines %}
+{% if routines_by_day %}
 <hr>
 <h4 class="mb-3">Rutinas por día</h4>
-{% set days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] %}
+{% set days = {0:'Lunes',1:'Martes',2:'Miércoles',3:'Jueves',4:'Viernes',5:'Sábado',6:'Domingo'} %}
 {% for d in range(7) %}
-    {% set day_routines = routines | selectattr("day_of_week", "equalto", d) | list %}
-{% if day_routines %}
+{% set day_list = routines_by_day.get(d, []) %}
+{% if day_list %}
     <div class="card mb-3">
         <div class="card-body">
             <h5 class="card-title">{{ days[d] }}</h5>
@@ -68,7 +68,7 @@
                         <tr><th>Nombre</th><th>Categoría</th><th>Ejercicios</th><th></th></tr>
                     </thead>
                     <tbody>
-                        {% for r in day_routines %}
+                        {% for r in day_list %}
                         <tr>
                             <td>{{ r.name }}</td>
                             <td>{{ r.category }}</td>
@@ -85,9 +85,9 @@
             </div>
         </div>
     </div>
-    {% endif %}
+{% endif %}
 {% endfor %}
-{% set unassigned = routines | selectattr("day_of_week", "none") | list %}
+{% set unassigned = routines_by_day.get(-1, []) %}
 {% if unassigned %}
 <div class="card">
     <div class="card-body">
