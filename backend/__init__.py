@@ -36,4 +36,18 @@ def create_app():
                 return send_from_directory(frontend_dist, path)
             return send_from_directory(frontend_dist, 'index.html')
 
+    with app.app_context():
+        db.create_all()
+
+        from backend.models import Gym, User
+        if not Gym.query.first():
+            default_gym = Gym(name='Gym Principal', slug='principal', plan='starter', approved=True)
+            db.session.add(default_gym)
+            db.session.commit()
+
+            admin = User(username='admin', email='admin@evofit.com', role='admin', is_super_admin=True, gym_id=default_gym.id)
+            admin.set_password('admin123')
+            db.session.add(admin)
+            db.session.commit()
+
     return app
