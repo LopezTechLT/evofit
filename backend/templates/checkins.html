@@ -20,7 +20,7 @@
         <tbody>
             {% for c in checkins %}
             <tr>
-                <td>{{ c.client.name }}</td>
+                <td>{{ c.client.name if c.client else 'Eliminado' }}</td>
                 <td>{{ c.timestamp.strftime('%H:%M') }}</td>
                 <td>{{ c.timestamp.strftime('%Y-%m-%d') }}</td>
             </tr>
