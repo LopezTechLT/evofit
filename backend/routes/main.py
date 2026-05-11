@@ -321,5 +321,5 @@ def qr_scan():
         checkin = CheckIn(gym_id=get_current_gym_id(), client_id=client.id)
         db.session.add(checkin)
         db.session.commit()
-        return jsonify({'message': 'Entrada registrada', 'client': client.name, 'time': checkin.timestamp.isoformat()})
+        return jsonify({'message': 'Entrada registrada', 'client': client.name, 'time': checkin.timestamp.isoformat() + 'Z'})
     return jsonify({'error': 'Cliente no encontrado'}), 404
