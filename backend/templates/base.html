@@ -48,6 +48,9 @@
 
             <div class="collapse navbar-collapse" id="navbarMain">
                 <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link" href="/landing#beneficios">Beneficios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/landing#planes">Planes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/landing#contacto">Contacto</a></li>
                     {% if current_user.is_authenticated %}
                         {% if current_user.role == 'user' %}
                             <li class="nav-item d-lg-none"><a class="nav-link" href="/home" onclick="history.pushState({}, '', '/cliente'); return true">Entrenar</a></li>
@@ -74,9 +77,6 @@
                             <li class="nav-item d-lg-none"><a class="nav-link" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
                         {% endif %}
                     {% else %}
-                        <li class="nav-item"><a class="nav-link" href="/landing#beneficios">Beneficios</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/landing#planes">Planes</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/landing#contacto">Contacto</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Iniciar sesión</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.register_gym') }}">Registrar gym</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.register') }}">Registrarse</a></li>
