@@ -8,16 +8,22 @@
 <form method="POST">
     {{ form.hidden_tag() }}
     <div class="row g-3">
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="mb-3">
                 {{ form.name.label(class="form-label") }}
                 {{ form.name(class="form-control", placeholder="Ej: Full Body") }}
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="mb-3">
                 {{ form.category.label(class="form-label") }}
                 {{ form.category(class="form-select") }}
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mb-3">
+                {{ form.day_of_week.label(class="form-label") }}
+                {{ form.day_of_week(class="form-select") }}
             </div>
         </div>
     </div>
@@ -48,28 +54,68 @@
 
 {% if routines %}
 <hr>
-<h4 class="mb-3">Rutinas existentes</h4>
-<div class="table-responsive">
-    <table class="table table-striped">
-        <thead>
-            <tr><th>Nombre</th><th>Categoría</th><th>Ejercicios</th><th></th></tr>
-        </thead>
-        <tbody>
-            {% for r in routines %}
-            <tr>
-                <td>{{ r.name }}</td>
-                <td>{{ r.category }}</td>
-                <td>{% if r.exercises %}✓{% else %}—{% endif %}</td>
-                <td>
-                    <form method="POST" action="{{ url_for('admin.delete_routine', id=r.id) }}" onsubmit="return confirm('¿Eliminar esta rutina?');">
-                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<h4 class="mb-3">Rutinas por día</h4>
+{% set days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] %}
+{% for d in range(7) %}
+    {% set day_routines = routines | selectattr("day_of_week", "equalto", d) | list %}
+{% if day_routines %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">{{ days[d] }}</h5>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr><th>Nombre</th><th>Categoría</th><th>Ejercicios</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        {% for r in day_routines %}
+                        <tr>
+                            <td>{{ r.name }}</td>
+                            <td>{{ r.category }}</td>
+                            <td>{% if r.exercises %}✓{% else %}—{% endif %}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('admin.delete_routine', id=r.id) }}" onsubmit="return confirm('¿Eliminar esta rutina?');">
+                                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
+{% set unassigned = routines | selectattr("day_of_week", "none") | list %}
+{% if unassigned %}
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title text-muted">Sin día asignado</h5>
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr><th>Nombre</th><th>Categoría</th><th>Ejercicios</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for r in unassigned %}
+                    <tr>
+                        <td>{{ r.name }}</td>
+                        <td>{{ r.category }}</td>
+                        <td>{% if r.exercises %}✓{% else %}—{% endif %}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('admin.delete_routine', id=r.id) }}" onsubmit="return confirm('¿Eliminar esta rutina?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+{% endif %}
 {% endif %}
 
 <script>

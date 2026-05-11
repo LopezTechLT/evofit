@@ -59,9 +59,15 @@ class PaymentForm(FlaskForm):
     submit = SubmitField('Guardar')
 
 
+DAYS = [
+    ('0', 'Lunes'), ('1', 'Martes'), ('2', 'Miércoles'),
+    ('3', 'Jueves'), ('4', 'Viernes'), ('5', 'Sábado'), ('6', 'Domingo'),
+]
+
 class RoutineForm(FlaskForm):
     name = StringField('Nombre', validators=[DataRequired()])
     category = SelectField('Categoría', choices=[('pecho', 'Pecho'), ('espalda', 'Espalda'), ('pierna', 'Pierna'), ('cardio', 'Cardio')])
+    day_of_week = SelectField('Día de la semana', choices=[('', '— Sin día —')] + DAYS, validators=[Optional()])
     # Se rellena desde el UI interactivo (JSON string)
     exercises = TextAreaField('Ejercicios (JSON)', validators=[Optional()])
     submit = SubmitField('Guardar')

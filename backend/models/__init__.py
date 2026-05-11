@@ -83,6 +83,7 @@ class Routine(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
     name = db.Column(db.String(150), nullable=False)
     category = db.Column(db.String(100))  # pecho, espalda, pierna, cardio
+    day_of_week = db.Column(db.Integer, nullable=True)  # 0=Lunes ... 6=Domingo
     exercises = db.Column(db.Text)  # JSON string of exercises
     created_date = db.Column(db.DateTime, default=datetime.utcnow)
     gym = db.relationship('Gym', backref='routines')

@@ -136,38 +136,20 @@ def client_dashboard():
         return render_template('cliente_dashboard.html', client=None)
 
     membership = Membership.query.filter_by(client_id=client.id).order_by(Membership.end_date.desc()).first()
-    routines = Routine.query.filter_by(client_id=client.id).order_by(Routine.created_date.desc()).all()
+    routines = Routine.query.filter_by(client_id=client.id).order_by(Routine.day_of_week).all()
     progress = Progress.query.filter_by(client_id=client.id).order_by(Progress.date.desc()).limit(5).all()
     payments = Payment.query.filter_by(client_id=client.id).order_by(Payment.date.desc()).all()
 
-    routine_cards = []
+    routine_by_day = {}
     for r in routines:
-        try:
-            parsed = json.loads(r.exercises or '[]')
-            exercises = parsed if isinstance(parsed, list) else []
-        except Exception:
-            exercises = []
-
-        names = []
-        for item in exercises:
-            if isinstance(item, dict) and item.get('name'):
-                names.append(str(item.get('name')))
-        routine_cards.append(
-            {
-                'id': r.id,
-                'name': r.name,
-                'category': r.category,
-                'exercise_count': len(exercises),
-                'preview_names': names[:3],
-            }
-        )
+        routine_by_day[r.day_of_week] = r
 
     return render_template(
         'cliente_dashboard.html',
         client=client,
         membership=membership,
         routines=routines,
-        routine_cards=routine_cards,
+        routine_by_day=routine_by_day,
         progress=progress,
         payments=payments
     )
@@ -257,11 +239,13 @@ def add_routine(client_id):
             exercises = json.loads(form.exercises.data or '[]')
             if not isinstance(exercises, list) or len(exercises) == 0:
                 raise ValueError('Debe agregar al menos 1 ejercicio.')
+            day = int(form.day_of_week.data) if form.day_of_week.data else None
             routine = Routine(
                 gym_id=gym_id,
                 client_id=client_id,
                 name=form.name.data,
                 category=form.category.data,
+                day_of_week=day,
                 exercises=form.exercises.data
             )
             db.session.add(routine)
@@ -270,7 +254,7 @@ def add_routine(client_id):
             return redirect(url_for('main.client_detail', id=client_id))
         except Exception:
             flash('Ejercicios inválidos. Agrega al menos 1 ejercicio con el formulario.', 'danger')
-    routines = Routine.query.filter_by(client_id=client_id, gym_id=gym_id).all()
+    routines = Routine.query.filter_by(client_id=client_id, gym_id=gym_id).order_by(Routine.day_of_week).all()
     return render_template('add_routine.html', form=form, client_id=client_id, routines=routines)
 
 @main.route('/add_progress/<int:client_id>', methods=['GET', 'POST'])

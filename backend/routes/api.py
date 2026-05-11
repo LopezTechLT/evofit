@@ -48,35 +48,38 @@ def _client_routine_to_card(r: Routine) -> dict:
 def _ensure_default_routines(client: Client):
     if not client or Routine.query.filter_by(client_id=client.id).first():
         return
-    routines_data = [
-        {
-            'name': 'Full Body Quemador',
-            'category': 'fullbody',
-            'exercises': [
-                {'name': 'Sentadilla', 'sets': 3, 'reps': 12, 'rest_seconds': 60, 'muscles': 'Pierna,Glúteos'},
-                {'name': 'Press banca', 'sets': 3, 'reps': 10, 'rest_seconds': 60, 'muscles': 'Pecho,Tríceps'},
-                {'name': 'Remo con barra', 'sets': 3, 'reps': 12, 'rest_seconds': 45, 'muscles': 'Espalda,Bíceps'},
-                {'name': 'Plancha', 'sets': 3, 'reps': 30, 'rest_seconds': 30, 'muscles': 'Core'},
-            ],
-        },
-        {
-            'name': 'Cardio Quemagrasa',
-            'category': 'cardio',
-            'exercises': [
-                {'name': 'Saltos de tijera', 'sets': 3, 'reps': 30, 'rest_seconds': 30, 'muscles': 'Pierna,Cardio'},
-                {'name': 'Burpees', 'sets': 3, 'reps': 10, 'rest_seconds': 45, 'muscles': 'Full Body,Cardio'},
-                {'name': 'Mountain climbers', 'sets': 3, 'reps': 20, 'rest_seconds': 30, 'muscles': 'Core,Cardio'},
-                {'name': 'Plancha', 'sets': 3, 'reps': 30, 'rest_seconds': 30, 'muscles': 'Core'},
-            ],
-        },
+    defaults = [
+        (0, 'Full Body Quemador', 'fullbody', [
+            {'name': 'Sentadilla', 'sets': 3, 'reps': 12, 'rest_seconds': 60, 'muscles': 'Pierna,Glúteos'},
+            {'name': 'Press banca', 'sets': 3, 'reps': 10, 'rest_seconds': 60, 'muscles': 'Pecho,Tríceps'},
+            {'name': 'Remo con barra', 'sets': 3, 'reps': 12, 'rest_seconds': 45, 'muscles': 'Espalda,Bíceps'},
+            {'name': 'Plancha', 'sets': 3, 'reps': 30, 'rest_seconds': 30, 'muscles': 'Core'},
+        ]),
+        (1, 'Cardio Quemagrasa', 'cardio', [
+            {'name': 'Saltos de tijera', 'sets': 3, 'reps': 30, 'rest_seconds': 30, 'muscles': 'Pierna,Cardio'},
+            {'name': 'Burpees', 'sets': 3, 'reps': 10, 'rest_seconds': 45, 'muscles': 'Full Body,Cardio'},
+            {'name': 'Mountain climbers', 'sets': 3, 'reps': 20, 'rest_seconds': 30, 'muscles': 'Core,Cardio'},
+            {'name': 'Plancha', 'sets': 3, 'reps': 30, 'rest_seconds': 30, 'muscles': 'Core'},
+        ]),
+        (2, 'Empuje y Tracción', 'pecho', [
+            {'name': 'Press militar', 'sets': 4, 'reps': 10, 'rest_seconds': 60, 'muscles': 'Hombro'},
+            {'name': 'Dominadas', 'sets': 3, 'reps': 8, 'rest_seconds': 60, 'muscles': 'Espalda,Bíceps'},
+            {'name': 'Fondos en paralelas', 'sets': 3, 'reps': 12, 'rest_seconds': 45, 'muscles': 'Pecho,Tríceps'},
+        ]),
+        (3, 'Piernas y Glúteos', 'pierna', [
+            {'name': 'Peso muerto', 'sets': 4, 'reps': 8, 'rest_seconds': 90, 'muscles': 'Espalda baja,Glúteos'},
+            {'name': 'Zancadas', 'sets': 3, 'reps': 12, 'rest_seconds': 45, 'muscles': 'Pierna,Glúteos'},
+            {'name': 'Elevación de cadera', 'sets': 3, 'reps': 15, 'rest_seconds': 30, 'muscles': 'Glúteos'},
+        ]),
     ]
-    for rd in routines_data:
+    for day, name, cat, exercises in defaults:
         r = Routine(
             gym_id=client.gym_id,
             client_id=client.id,
-            name=rd['name'],
-            category=rd['category'],
-            exercises=json_lib.dumps(rd['exercises']),
+            name=name,
+            category=cat,
+            day_of_week=day,
+            exercises=json_lib.dumps(exercises),
         )
         db.session.add(r)
     db.session.commit()
@@ -120,6 +123,7 @@ def _routine_to_dict(r: Routine) -> dict:
         'exercisesCount': count,
         'estimatedKcal': estimated,
         'focus': focus,
+        'dayOfWeek': r.day_of_week,
     }
 
 
@@ -205,11 +209,11 @@ def fitness_dashboard():
     _ensure_achievements_catalog()
     profile = _ensure_profile(current_user.id)
 
-    # routine of the day: naive pick based on weekday
+    # routine of the day: find by day_of_week
     client = _current_client()
     _ensure_default_routines(client)
-    routines = Routine.query.filter_by(client_id=client.id).order_by(Routine.id.asc()).all() if client else []
-    routine_today = routines[datetime.utcnow().weekday() % max(1, len(routines))] if routines else None
+    today = datetime.utcnow().weekday()
+    routine_today = Routine.query.filter_by(client_id=client.id, day_of_week=today).first() if client else None
 
     # weekly stats: last 7 days
     since = datetime.utcnow() - timedelta(days=7)
