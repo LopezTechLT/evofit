@@ -9,6 +9,16 @@ from sqlalchemy import func, or_
 from datetime import datetime, timedelta
 import os
 
+def super_admin_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_super_admin:
+            flash('Acceso denegado. Solo el super admin puede realizar esta acción.', 'danger')
+            return redirect(url_for('main.index'))
+        return f(*args, **kwargs)
+    return decorated
+
 admin = Blueprint('admin', __name__)
 
 
@@ -156,11 +166,8 @@ def delete_client(id):
 
 @admin.route('/gyms', methods=['GET', 'POST'])
 @login_required
+@super_admin_required
 def gyms():
-    if current_user.role != 'admin':
-        flash('Acceso denegado.', 'danger')
-        return redirect(url_for('main.index'))
-
     form = GymForm()
     if form.validate_on_submit():
         slug = slugify_gym_name(form.slug.data) if form.slug.data else slugify_gym_name(form.name.data)
@@ -175,7 +182,85 @@ def gyms():
             return redirect(url_for('admin.gyms'))
 
     gyms_list = Gym.query.order_by(Gym.created_at.desc()).all()
-    return render_template('admin_gyms.html', form=form, gyms=gyms_list)
+    # Attach admin username per gym
+    gym_data = []
+    for g in gyms_list:
+        admin_user = User.query.filter_by(gym_id=g.id, role='admin').first()
+        gym_data.append({'gym': g, 'admin': admin_user})
+    return render_template('admin_gyms.html', form=form, gyms=gym_data)
+
+
+@admin.route('/gym/<int:gym_id>/edit_admin', methods=['GET', 'POST'])
+@login_required
+@super_admin_required
+def edit_gym_admin(gym_id):
+    gym = Gym.query.get_or_404(gym_id)
+    current_admin = User.query.filter_by(gym_id=gym.id, role='admin').first()
+    gym_users = User.query.filter_by(gym_id=gym.id).all()
+
+    if request.method == 'POST':
+        user_id = request.form.get('user_id')
+        if user_id:
+            user = User.query.get(int(user_id))
+            if user and user.gym_id == gym.id:
+                if current_admin and current_admin.id != user.id:
+                    current_admin.role = 'user'
+                user.role = 'admin'
+                db.session.commit()
+                flash(f'Admin cambiado a {user.username}', 'success')
+            else:
+                flash('Usuario no válido para este gimnasio.', 'danger')
+        else:
+            username = request.form.get('new_username')
+            email = request.form.get('new_email')
+            password = request.form.get('new_password')
+            if username and email and password:
+                exists = User.query.filter_by(username=username).first()
+                if exists:
+                    flash('Ya existe un usuario con ese nombre.', 'danger')
+                else:
+                    new_admin = User(username=username, email=email, role='admin', gym_id=gym.id)
+                    new_admin.set_password(password)
+                    if current_admin:
+                        current_admin.role = 'user'
+                    db.session.add(new_admin)
+                    db.session.commit()
+                    flash(f'Nuevo admin creado: {username}', 'success')
+            else:
+                flash('Completa todos los campos para crear un nuevo admin.', 'danger')
+        return redirect(url_for('admin.gyms'))
+
+    return render_template('edit_gym_admin.html', gym=gym, current_admin=current_admin, users=gym_users)
+
+
+@admin.route('/gym/<int:gym_id>/delete', methods=['POST'])
+@login_required
+@super_admin_required
+def delete_gym(gym_id):
+    gym = Gym.query.get_or_404(gym_id)
+    gym_name = gym.name
+
+    for user in User.query.filter_by(gym_id=gym.id).all():
+        db.session.delete(user)
+    for client in Client.query.filter_by(gym_id=gym.id).all():
+        for m in list(client.memberships):
+            db.session.delete(m)
+        for p in list(client.payments):
+            db.session.delete(p)
+        for r in list(client.routines):
+            db.session.delete(r)
+        for pr in list(client.progress):
+            db.session.delete(pr)
+        if client.qr_code:
+            qr_path = os.path.join(current_app.static_folder, 'images', client.qr_code)
+            if os.path.exists(qr_path):
+                os.remove(qr_path)
+        db.session.delete(client)
+
+    db.session.delete(gym)
+    db.session.commit()
+    flash(f'Gimnasio "{gym_name}" eliminado correctamente.', 'success')
+    return redirect(url_for('admin.gyms'))
 
 
 @admin.route('/pending_gyms')

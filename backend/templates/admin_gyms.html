@@ -34,15 +34,24 @@
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
-                            <tr><th>ID</th><th>Nombre</th><th>Slug</th><th>Plan</th></tr>
+                            <tr><th>ID</th><th>Nombre</th><th>Slug</th><th>Plan</th><th>Admin</th><th>Acciones</th></tr>
                         </thead>
                         <tbody>
-                            {% for gym in gyms %}
+                            {% for item in gyms %}
+                            {% set gym = item.gym %}
+                            {% set admin = item.admin %}
                             <tr>
                                 <td>{{ gym.id }}</td>
                                 <td>{{ gym.name }}</td>
                                 <td>{{ gym.slug }}</td>
                                 <td>{{ gym.plan }}</td>
+                                <td>{% if admin %}{{ admin.username }}{% else %}<span class="text-danger">Sin admin</span>{% endif %}</td>
+                                <td>
+                                    <a href="{{ url_for('admin.edit_gym_admin', gym_id=gym.id) }}" class="btn btn-sm btn-warning">Cambiar admin</a>
+                                    <form method="POST" action="{{ url_for('admin.delete_gym', gym_id=gym.id) }}" style="display:inline" onsubmit="return confirm('¿Eliminar el gimnasio «{{ gym.name }}» y todos sus datos? Esta acción no se puede deshacer.')">
+                                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                                    </form>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>

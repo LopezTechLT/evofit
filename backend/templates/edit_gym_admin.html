@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h4 class="mb-3">Cambiar admin &mdash; {{ gym.name }}</h4>
+
+                <div class="mb-4">
+                    <strong>Admin actual:</strong>
+                    {% if current_admin %}
+                        {{ current_admin.username }} ({{ current_admin.email }})
+                    {% else %}
+                        <span class="text-danger">Sin admin asignado</span>
+                    {% endif %}
+                </div>
+
+                <form method="POST">
+                    <div class="mb-4">
+                        <label class="form-label">Seleccionar usuario existente</label>
+                        <select name="user_id" class="form-select">
+                            <option value="">-- Elegir usuario --</option>
+                            {% for u in users %}
+                            <option value="{{ u.id }}" {% if current_admin and u.id == current_admin.id %}selected{% endif %}>
+                                {{ u.username }} ({{ u.email }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <hr>
+                    <p class="text-muted small">O crea un nuevo usuario administrador:</p>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <input type="text" name="new_username" class="form-control" placeholder="Usuario">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="email" name="new_email" class="form-control" placeholder="Correo">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="password" name="new_password" class="form-control" placeholder="Contraseña">
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                        <a href="{{ url_for('admin.gyms') }}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
