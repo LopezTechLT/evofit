@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, send_from_directory
 from flask_login import login_required, current_user
 from backend import db
 from backend.models import Client, Membership, Payment, Routine, Progress
@@ -18,6 +18,9 @@ def _get_current_client():
 
 @main.route('/')
 def index():
+    frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '..', 'frontend', 'dist')
+    if os.path.isdir(os.path.join(frontend_dist, 'assets')):
+        return send_from_directory(frontend_dist, 'index.html')
     return render_template('index.html')
 
 @main.route('/fitness')
