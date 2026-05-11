@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Clientes</h2>
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <h2 class="mb-0">Clientes</h2>
+    <a href="{{ url_for('main.add_client') }}" class="btn btn-dark btn-sm">Añadir cliente</a>
+</div>
+<div class="table-responsive">
 <table class="table">
     <thead>
         <tr>
@@ -31,4 +35,5 @@
         {% endfor %}
     </tbody>
 </table>
+</div>
 {% endblock %}

@@ -198,3 +198,82 @@ footer.footer {
     background: #ffffff;
     color: #111827;
 }
+
+/* ===== responsive ===== */
+@media (max-width: 767.98px) {
+    .hero {
+        min-height: auto;
+        padding: 2rem 1rem !important;
+        border-radius: 1.5rem !important;
+    }
+    .display-5 {
+        font-size: calc(1.8rem + .6vw) !important;
+    }
+    .display-6 {
+        font-size: calc(1.4rem + .4vw) !important;
+    }
+    .brand-logo {
+        height: 40px;
+    }
+    .container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+    main > .container {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+    .feature-card:hover,
+    .plan-card:hover,
+    .card:hover {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    .feature-card,
+    .plan-card {
+        transition: none !important;
+    }
+    .table-responsive {
+        font-size: 0.8rem;
+    }
+    .table-responsive .btn-sm {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+    .navbar .btn {
+        width: 100%;
+        margin-left: 0 !important;
+        margin-top: 0.5rem;
+    }
+    .navbar-nav .nav-item {
+        text-align: center;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .hero-card {
+        padding: 1.25rem !important;
+    }
+    .plan-card .display-6 {
+        font-size: 1.3rem !important;
+    }
+    .plan-card ul li {
+        font-size: 0.82rem;
+    }
+    .card-body {
+        padding: 1rem;
+    }
+    .fitness-shell {
+        padding: 0.75rem !important;
+        border-radius: 1rem !important;
+    }
+    .fitness-card {
+        padding: 1rem !important;
+    }
+    .modal-shell {
+        padding: 1rem !important;
+    }
+    .train-shell {
+        padding: 1rem !important;
+    }
+}
