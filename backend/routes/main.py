@@ -16,9 +16,10 @@ main = Blueprint('main', __name__)
 def _get_current_client():
     return Client.query.filter_by(email=current_user.email, gym_id=get_current_gym_id()).first()
 
+@main.route('/landing')
 @main.route('/')
 def index():
-    if current_user.is_authenticated:
+    if current_user.is_authenticated and request.path == '/':
         frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '..', 'frontend', 'dist')
         if os.path.isdir(os.path.join(frontend_dist, 'assets')):
             return send_from_directory(frontend_dist, 'index.html')
