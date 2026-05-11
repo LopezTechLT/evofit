@@ -37,6 +37,7 @@ def create_app():
             return send_from_directory(frontend_dist, 'index.html')
 
     with app.app_context():
+        os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance'), exist_ok=True)
         db.create_all()
 
         from backend.models import Gym, User
