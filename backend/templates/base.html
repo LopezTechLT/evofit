@@ -41,7 +41,7 @@
                     {% endif %}
                 </div>
 
-                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-label="Toggle">
+                <button class="navbar-toggler border-0 ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-label="Toggle">
                     <span class="navbar-toggler-icon"></span>
                 </button>
             </div>
@@ -74,9 +74,9 @@
                             <li class="nav-item d-lg-none"><a class="nav-link" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
                         {% endif %}
                     {% else %}
-                        <li class="nav-item d-lg-none"><a class="nav-link" href="/landing#beneficios">Beneficios</a></li>
-                        <li class="nav-item d-lg-none"><a class="nav-link" href="/landing#planes">Planes</a></li>
-                        <li class="nav-item d-lg-none"><a class="nav-link" href="/landing#contacto">Contacto</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/landing#beneficios">Beneficios</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/landing#planes">Planes</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/landing#contacto">Contacto</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Iniciar sesión</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.register_gym') }}">Registrar gym</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.register') }}">Registrarse</a></li>
