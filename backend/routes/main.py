@@ -312,6 +312,7 @@ def service_worker():
 
 
 @main.route('/qr_scan', methods=['POST'])
+@login_required
 def qr_scan():
     data = request.json
     client_id = data.get('client_id')
