@@ -17,6 +17,7 @@
     <button onclick="window.print()">Imprimir / Guardar PDF</button>
 </div>
 <h1>Clientes - {{ gym_name }}</h1>
+<div class="table-responsive">
 <table>
     <thead>
         <tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Edad</th><th>Meta</th><th>Estado</th><th>Registro</th></tr>
@@ -35,5 +36,6 @@
         {% endfor %}
     </tbody>
 </table>
+</div>
 </body>
 </html>

@@ -99,6 +99,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Historial de pagos</h5>
                     {% if payments %}
+                        <div class="table-responsive">
                         <table class="table table-sm">
                             <thead>
                                 <tr>
@@ -117,9 +118,10 @@
                                         <td>{{ pay.membership.plan if pay.membership else 'General' }}</td>
                                     </tr>
                                 {% endfor %}
-                            </tbody>
-                        </table>
-                    {% else %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
                         <p>No hay pagos registrados.</p>
                     {% endif %}
                 </div>
