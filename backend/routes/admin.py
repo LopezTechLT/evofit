@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from backend import db
-from backend.models import Client, Payment, Membership, Routine, Progress, User, Gym
+from backend.models import Client, Payment, Membership, Routine, Progress, User, Gym, CheckIn
 from backend.forms import GymForm
 from backend.utils.membership import effective_membership_price
 from backend.utils.tenant import get_current_gym_id, slugify_gym_name
@@ -272,6 +272,8 @@ def delete_gym(gym_id):
 
     for user in User.query.filter_by(gym_id=gym.id).all():
         db.session.delete(user)
+    for c in CheckIn.query.filter_by(gym_id=gym.id).all():
+        db.session.delete(c)
     for client in Client.query.filter_by(gym_id=gym.id).all():
         for m in list(client.memberships):
             db.session.delete(m)

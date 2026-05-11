@@ -77,6 +77,15 @@ class Payment(db.Model):
     description = db.Column(db.String(200))
     gym = db.relationship('Gym', backref='payments')
 
+class CheckIn(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    gym_id = db.Column(db.Integer, db.ForeignKey('gym.id'), nullable=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    client = db.relationship('Client', backref='check_ins')
+    gym = db.relationship('Gym', backref='check_ins')
+
+
 class Routine(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     gym_id = db.Column(db.Integer, db.ForeignKey('gym.id'), nullable=True)

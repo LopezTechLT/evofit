@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, make_response, current_app
 from flask_login import login_required, current_user
 from backend import db
-from backend.models import Client, Membership, Payment, Routine, Progress
+from backend.models import Client, Membership, Payment, Routine, Progress, CheckIn
 from backend.forms import ClientForm, MembershipForm, PaymentForm, RoutineForm, ProgressForm
 from backend.utils.membership import effective_membership_price
 from backend.utils.tenant import get_current_gym_id
@@ -284,6 +284,24 @@ def add_progress(client_id):
     progress_list = Progress.query.filter_by(client_id=client_id, gym_id=gym_id).order_by(Progress.date.desc()).all()
     return render_template('add_progress.html', form=form, client_id=client_id, progress_list=progress_list)
 
+@main.route('/escaner')
+@login_required
+def escaner():
+    return render_template('scanner.html')
+
+
+@main.route('/checkins')
+@login_required
+def checkins():
+    if current_user.role == 'user':
+        return redirect(url_for('main.client_dashboard'))
+    gym_id = get_current_gym_id()
+    checks = CheckIn.query.filter_by(gym_id=gym_id).order_by(CheckIn.timestamp.desc()).limit(50).all()
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    todays_count = CheckIn.query.filter(CheckIn.gym_id == gym_id, CheckIn.timestamp >= today_start).count()
+    return render_template('checkins.html', checkins=checks, now=datetime.utcnow(), todays_count=todays_count)
+
+
 @main.route('/service-worker.js')
 def service_worker():
     resp = make_response(current_app.send_static_file('service-worker.js'))
@@ -298,6 +316,8 @@ def qr_scan():
     client_id = data.get('client_id')
     client = Client.query.filter_by(id=client_id, gym_id=get_current_gym_id()).first()
     if client:
-        # Log entry
-        return jsonify({'message': 'Entry logged', 'client': client.name})
-    return jsonify({'error': 'Client not found'}), 404
+        checkin = CheckIn(gym_id=get_current_gym_id(), client_id=client.id)
+        db.session.add(checkin)
+        db.session.commit()
+        return jsonify({'message': 'Entrada registrada', 'client': client.name, 'time': checkin.timestamp.isoformat()})
+    return jsonify({'error': 'Cliente no encontrado'}), 404

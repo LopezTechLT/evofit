@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <h2 class="mb-0">Entradas (check-in)</h2>
+    <a href="{{ url_for('main.escaner') }}" class="btn btn-dark">Escanear QR</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Entradas hoy</h5>
+        <div class="display-6">{{ todays_count }}</div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr><th>Cliente</th><th>Hora</th><th>Fecha</th></tr>
+        </thead>
+        <tbody>
+            {% for c in checkins %}
+            <tr>
+                <td>{{ c.client.name }}</td>
+                <td>{{ c.timestamp.strftime('%H:%M') }}</td>
+                <td>{{ c.timestamp.strftime('%Y-%m-%d') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
