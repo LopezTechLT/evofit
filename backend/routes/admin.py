@@ -121,6 +121,36 @@ def delete_payment(id):
     flash('Pago eliminado correctamente.', 'success')
     return redirect(url_for('main.client_detail', id=client_id))
 
+@admin.route('/routine/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_routine(id):
+    if current_user.role != 'admin':
+        flash('No tienes permiso para eliminar rutinas.', 'danger')
+        return redirect(url_for('main.index'))
+
+    routine = Routine.query.filter_by(id=id, gym_id=get_current_gym_id()).first_or_404()
+    client_id = routine.client_id
+    db.session.delete(routine)
+    db.session.commit()
+    flash('Rutina eliminada correctamente.', 'success')
+    return redirect(url_for('main.client_detail', id=client_id))
+
+
+@admin.route('/progress/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_progress(id):
+    if current_user.role != 'admin':
+        flash('No tienes permiso para eliminar progresos.', 'danger')
+        return redirect(url_for('main.index'))
+
+    progress = Progress.query.filter_by(id=id, gym_id=get_current_gym_id()).first_or_404()
+    client_id = progress.client_id
+    db.session.delete(progress)
+    db.session.commit()
+    flash('Progreso eliminado correctamente.', 'success')
+    return redirect(url_for('main.client_detail', id=client_id))
+
+
 @admin.route('/client/delete/<int:id>', methods=['POST'])
 @login_required
 def delete_client(id):

@@ -20,4 +20,30 @@
         <a href="{{ url_for('main.client_detail', id=client_id) }}" class="btn btn-outline-dark">Cancelar</a>
     </div>
 </form>
+
+{% if progress_list %}
+<hr>
+<h4 class="mb-3">Progresos existentes</h4>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr><th>Fecha</th><th>Peso</th><th>IMC</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for p in progress_list %}
+            <tr>
+                <td>{{ p.date.strftime('%Y-%m-%d') }}</td>
+                <td>{% if p.weight %}{{ p.weight }} kg{% else %}—{% endif %}</td>
+                <td>{% if p.imc %}{{ "%.1f"|format(p.imc) }}{% else %}—{% endif %}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('admin.delete_progress', id=p.id) }}" onsubmit="return confirm('¿Eliminar este progreso?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
 {% endblock %}

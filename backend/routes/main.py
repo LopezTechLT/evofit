@@ -203,7 +203,14 @@ def add_membership(client_id):
         db.session.commit()
         flash('Membresía añadida')
         return redirect(url_for('main.client_detail', id=client_id))
-    return render_template('add_membership.html', form=form, prices=prices, client_id=client_id)
+    existing = Membership.query.filter_by(client_id=client_id, gym_id=gym_id).order_by(Membership.end_date.desc()).all()
+    memberships_data = []
+    for m in existing:
+        total_paid = sum(p.amount for p in m.payments)
+        price = effective_membership_price(m)
+        status = 'Pagada' if total_paid >= price else 'Pendiente'
+        memberships_data.append({'m': m, 'paid': total_paid, 'status': status, 'price': price})
+    return render_template('add_membership.html', form=form, prices=prices, client_id=client_id, memberships=memberships_data)
 
 @main.route('/add_payment/<int:client_id>', methods=['GET', 'POST'])
 @login_required
@@ -240,7 +247,8 @@ def add_payment(client_id):
             except Exception as e:
                 db.session.rollback()
                 flash(f'Error al guardar pago: {str(e)}', 'danger')
-    return render_template('add_payment.html', form=form, client_id=client_id)
+    existing_payments = Payment.query.filter_by(client_id=client_id, gym_id=gym_id).order_by(Payment.date.desc()).all()
+    return render_template('add_payment.html', form=form, client_id=client_id, payments=existing_payments)
 
 @main.route('/add_routine/<int:client_id>', methods=['GET', 'POST'])
 @login_required
@@ -253,22 +261,21 @@ def add_routine(client_id):
             exercises = json.loads(form.exercises.data or '[]')
             if not isinstance(exercises, list) or len(exercises) == 0:
                 raise ValueError('Debe agregar al menos 1 ejercicio.')
+            routine = Routine(
+                gym_id=gym_id,
+                client_id=client_id,
+                name=form.name.data,
+                category=form.category.data,
+                exercises=form.exercises.data
+            )
+            db.session.add(routine)
+            db.session.commit()
+            flash('Rutina añadida')
+            return redirect(url_for('main.client_detail', id=client_id))
         except Exception:
             flash('Ejercicios inválidos. Agrega al menos 1 ejercicio con el formulario.', 'danger')
-            return render_template('add_routine.html', form=form, client_id=client_id)
-
-        routine = Routine(
-            gym_id=gym_id,
-            client_id=client_id,
-            name=form.name.data,
-            category=form.category.data,
-            exercises=form.exercises.data
-        )
-        db.session.add(routine)
-        db.session.commit()
-        flash('Rutina añadida')
-        return redirect(url_for('main.client_detail', id=client_id))
-    return render_template('add_routine.html', form=form, client_id=client_id)
+    routines = Routine.query.filter_by(client_id=client_id, gym_id=gym_id).all()
+    return render_template('add_routine.html', form=form, client_id=client_id, routines=routines)
 
 @main.route('/add_progress/<int:client_id>', methods=['GET', 'POST'])
 @login_required
@@ -290,7 +297,8 @@ def add_progress(client_id):
         db.session.commit()
         flash('Progreso añadido')
         return redirect(url_for('main.client_detail', id=client_id))
-    return render_template('add_progress.html', form=form, client_id=client_id)
+    progress_list = Progress.query.filter_by(client_id=client_id, gym_id=gym_id).order_by(Progress.date.desc()).all()
+    return render_template('add_progress.html', form=form, client_id=client_id, progress_list=progress_list)
 
 @main.route('/qr_scan', methods=['POST'])
 def qr_scan():

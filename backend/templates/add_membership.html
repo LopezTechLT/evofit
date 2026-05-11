@@ -29,4 +29,32 @@
         <a href="{{ url_for('main.client_detail', id=client_id) }}" class="btn btn-outline-dark">Cancelar</a>
     </div>
 </form>
+
+{% if memberships %}
+<hr>
+<h4 class="mb-3">Membresías existentes</h4>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr><th>Plan</th><th>Vence</th><th>Monto</th><th>Pagado</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for item in memberships %}
+            <tr>
+                <td>{{ item.m.plan }}</td>
+                <td>{{ item.m.end_date.strftime('%Y-%m-%d') }}</td>
+                <td>${{ "%.0f"|format(item.price) }}</td>
+                <td>${{ "%.0f"|format(item.paid) }}</td>
+                <td>{{ item.status }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('admin.delete_membership', id=item.m.id) }}" onsubmit="return confirm('¿Eliminar esta membresía?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
 {% endblock %}

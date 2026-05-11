@@ -28,4 +28,31 @@
         <a href="{{ url_for('main.client_detail', id=client_id) }}" class="btn btn-outline-dark">Cancelar</a>
     </div>
 </form>
+
+{% if payments %}
+<hr>
+<h4 class="mb-3">Pagos existentes</h4>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr><th>Fecha</th><th>Monto</th><th>Método</th><th>Descripción</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for pay in payments %}
+            <tr>
+                <td>{{ pay.date.strftime('%Y-%m-%d') }}</td>
+                <td>${{ "%.0f"|format(pay.amount) }}</td>
+                <td>{{ pay.method or '' }}</td>
+                <td>{{ pay.description or '' }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('admin.delete_payment', id=pay.id) }}" onsubmit="return confirm('¿Eliminar este pago?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
 {% endblock %}

@@ -46,6 +46,32 @@
     </div>
 </form>
 
+{% if routines %}
+<hr>
+<h4 class="mb-3">Rutinas existentes</h4>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr><th>Nombre</th><th>Categoría</th><th>Ejercicios</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for r in routines %}
+            <tr>
+                <td>{{ r.name }}</td>
+                <td>{{ r.category }}</td>
+                <td>{% if r.exercises %}✓{% else %}—{% endif %}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('admin.delete_routine', id=r.id) }}" onsubmit="return confirm('¿Eliminar esta rutina?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
 <script>
     const listEl = document.getElementById('exerciseList');
     const addBtn = document.getElementById('addExerciseBtn');
