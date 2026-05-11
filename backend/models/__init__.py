@@ -294,3 +294,13 @@ class FeedPost(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship('User', backref='feed_posts')
+
+
+class EmailSettings(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    smtp_host = db.Column(db.String(200), default='smtp.gmail.com')
+    smtp_port = db.Column(db.Integer, default=587)
+    smtp_user = db.Column(db.String(200), default='')
+    smtp_password = db.Column(db.String(200), default='')
+    from_email = db.Column(db.String(200), default='')
+    from_name = db.Column(db.String(200), default='EVOFIT')

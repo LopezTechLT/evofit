@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:sans-serif;background:#f3f4f6;padding:2rem;">
+<div style="max-width:560px;margin:auto;background:#fff;border-radius:1rem;padding:2rem;">
+    <h2 style="margin-top:0;">{{ gym_name }}</h2>
+    <p>Hola <strong>{{ client.name }}</strong>,</p>
+
+    {% if days_left < 0 %}
+        <p>Tu membresía ha <strong style="color:#ef4444;">vencido</strong>.</p>
+        <p>Por favor renueva tu plan para seguir entrenando.</p>
+    {% elif days_left == 0 %}
+        <p>Tu membresía <strong>vence HOY</strong>.</p>
+        <p>Renueva hoy para no perder el acceso.</p>
+    {% else %}
+        <p>Tu membresía vence en <strong>{{ days_left }} día(s)</strong>.</p>
+        <p>Acércate a la recepción para renovar a tiempo.</p>
+    {% endif %}
+
+    <table style="width:100%;border-collapse:collapse;margin-top:1.5rem;">
+        <tr><td style="padding:8px 0;color:#6b7280;">Plan</td><td style="font-weight:600;">{{ membership.plan }}</td></tr>
+        <tr><td style="padding:8px 0;color:#6b7280;">Vence</td><td style="font-weight:600;">{{ membership.end_date.strftime('%d/%m/%Y') }}</td></tr>
+    </table>
+
+    <p style="margin-top:2rem;color:#9ca3af;font-size:0.85rem;">EVOFIT — Software inteligente para gyms</p>
+</div>
+</body>
+</html>

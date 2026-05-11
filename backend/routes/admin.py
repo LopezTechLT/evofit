@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from backend import db
-from backend.models import Client, Payment, Membership, Routine, Progress, User, Gym, CheckIn
+from backend.models import Client, Payment, Membership, Routine, Progress, User, Gym, CheckIn, EmailSettings
 from backend.forms import GymForm
 from backend.utils.membership import effective_membership_price
 from backend.utils.tenant import get_current_gym_id, slugify_gym_name
@@ -319,3 +319,42 @@ def approve_gym(gym_id):
     db.session.commit()
     flash(f'Gimnasio "{gym.name}" aprobado correctamente.', 'success')
     return redirect(url_for('admin.pending_gyms'))
+
+
+@admin.route('/email_config', methods=['GET', 'POST'])
+@login_required
+def email_config():
+    if not current_user.is_super_admin:
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('main.index'))
+
+    settings = EmailSettings.query.first()
+    if not settings:
+        settings = EmailSettings()
+        db.session.add(settings)
+        db.session.commit()
+
+    if request.method == 'POST':
+        settings.smtp_host = request.form.get('smtp_host', 'smtp.gmail.com')
+        settings.smtp_port = int(request.form.get('smtp_port', 587))
+        settings.smtp_user = request.form.get('smtp_user', '')
+        settings.smtp_password = request.form.get('smtp_password', '')
+        settings.from_email = request.form.get('from_email', '')
+        settings.from_name = request.form.get('from_name', 'EVOFIT')
+        db.session.commit()
+        flash('Configuración de email guardada.', 'success')
+        return redirect(url_for('admin.email_config'))
+
+    return render_template('email_config.html', settings=settings)
+
+
+@admin.route('/send_reminders', methods=['POST'])
+@login_required
+def send_reminders():
+    from backend.utils.reminder import send_reminders as _send
+    result = _send()
+    flash(f'Recordatorios enviados: {result["sent"]}', 'success')
+    if result['errors']:
+        for e in result['errors']:
+            flash(e, 'danger')
+    return redirect(url_for('admin.dashboard'))

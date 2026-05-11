@@ -43,6 +43,7 @@
                             {% if current_user.is_super_admin %}
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.gyms') }}">Gyms</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.pending_gyms') }}">Aprobar gyms</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.email_config') }}">Email</a></li>
                             {% endif %}
                         {% endif %}
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>

@@ -48,6 +48,19 @@ def create_app():
         if 'day_of_week' not in cols_routine:
             db.session.execute(db.text('ALTER TABLE routine ADD COLUMN day_of_week INTEGER'))
             db.session.commit()
+        if 'email_settings' not in tables:
+            db.session.execute(db.text('''
+                CREATE TABLE email_settings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    smtp_host VARCHAR(200) DEFAULT 'smtp.gmail.com',
+                    smtp_port INTEGER DEFAULT 587,
+                    smtp_user VARCHAR(200) DEFAULT '',
+                    smtp_password VARCHAR(200) DEFAULT '',
+                    from_email VARCHAR(200) DEFAULT '',
+                    from_name VARCHAR(200) DEFAULT 'EVOFIT'
+                )
+            '''))
+            db.session.commit()
         if 'check_in' not in tables:
             db.session.execute(db.text('''
                 CREATE TABLE check_in (
