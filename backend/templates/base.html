@@ -13,51 +13,69 @@
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light navbar-custom shadow-sm">
+    <nav class="navbar navbar-light navbar-custom shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/landing">
-                <img
-                    src="{{ url_for('static', filename='images/evofit-logo.png') }}"
-                    alt="EVOFIT"
-                    class="brand-logo"
-                    onerror="this.style.display='none'"
-                >
+                <img src="{{ url_for('static', filename='images/evofit-logo.png') }}" alt="EVOFIT" class="brand-logo" onerror="this.style.display='none'">
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarMain">
-                <ul class="navbar-nav ms-auto align-items-center">
+
+            <!-- Visible always on desktop -->
+            <ul class="navbar-nav flex-row d-none d-lg-flex align-items-center gap-1 ms-auto me-2">
+                {% if current_user.is_authenticated %}
+                    {% if current_user.role == 'user' %}
+                        <li class="nav-item"><a class="nav-link" href="/home" onclick="history.pushState({}, '', '/cliente'); return true">Entrenar</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('main.client_dashboard') }}">Mi perfil</a></li>
+                    {% elif current_user.role == 'trainer' %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('trainer.dashboard') }}">Mis clientes</a></li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('main.clients') }}">Clientes</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.dashboard') }}">Panel</a></li>
+                    {% endif %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
+                {% else %}
                     <li class="nav-item"><a class="nav-link" href="/landing#beneficios">Beneficios</a></li>
                     <li class="nav-item"><a class="nav-link" href="/landing#planes">Planes</a></li>
                     <li class="nav-item"><a class="nav-link" href="/landing#contacto">Contacto</a></li>
-    {% if current_user.is_authenticated %}
-        {% if current_user.role == 'user' %}
-            <li class="nav-item"><a class="nav-link" href="/home" onclick="history.pushState({}, '', '/cliente'); return true">Entrenar</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.client_dashboard') }}">Mi perfil</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.clases') }}">Clases</a></li>
-        {% elif current_user.role == 'trainer' %}
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('trainer.dashboard') }}">Mis clientes</a></li>
-        {% else %}
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.clients') }}">Clientes</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.dashboard') }}">Panel</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.escaner') }}">QR</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.checkins') }}">Entradas</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.classes') }}">Clases</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.reports') }}">Reportes</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.products') }}">Inventario</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.trainers') }}">Staff</a></li>
-            {% if current_user.is_super_admin %}
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.gyms') }}">Gyms</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.pending_gyms') }}">Aprobar gyms</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.email_config') }}">Email</a></li>
-            {% endif %}
-        {% endif %}
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
+                {% endif %}
+            </ul>
+
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-label="Toggle">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <!-- Visible also in hamburger on mobile -->
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.role == 'user' %}
+                            <li class="nav-item d-lg-none"><a class="nav-link" href="/home" onclick="history.pushState({}, '', '/cliente'); return true">Entrenar</a></li>
+                            <li class="nav-item d-lg-none"><a class="nav-link" href="{{ url_for('main.client_dashboard') }}">Mi perfil</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.clases') }}">Clases</a></li>
+                        {% elif current_user.role == 'trainer' %}
+                            <li class="nav-item d-lg-none"><a class="nav-link" href="{{ url_for('trainer.dashboard') }}">Mis clientes</a></li>
+                        {% else %}
+                            <li class="nav-item d-lg-none"><a class="nav-link" href="{{ url_for('main.clients') }}">Clientes</a></li>
+                            <li class="nav-item d-lg-none"><a class="nav-link" href="{{ url_for('admin.dashboard') }}">Panel</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.escaner') }}">QR</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('main.checkins') }}">Entradas</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.classes') }}">Clases</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.reports') }}">Reportes</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.products') }}">Inventario</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.trainers') }}">Staff</a></li>
+                            {% if current_user.is_super_admin %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.gyms') }}">Gyms</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.pending_gyms') }}">Aprobar gyms</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.email_config') }}">Email</a></li>
+                            {% endif %}
+                        {% endif %}
+                        <li class="nav-item d-lg-none"><a class="nav-link" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
                     {% else %}
+                        <li class="nav-item d-lg-none"><a class="nav-link" href="/landing#beneficios">Beneficios</a></li>
+                        <li class="nav-item d-lg-none"><a class="nav-link" href="/landing#planes">Planes</a></li>
+                        <li class="nav-item d-lg-none"><a class="nav-link" href="/landing#contacto">Contacto</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Iniciar sesión</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.register_gym') }}">Registrar gym</a></li>
-                        <li class="nav-item"><a class="btn btn-outline-light ms-2" href="{{ url_for('auth.register') }}">Registrarse</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.register') }}">Registrarse</a></li>
                     {% endif %}
                 </ul>
             </div>
