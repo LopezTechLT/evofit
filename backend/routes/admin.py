@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from backend import db
-from backend.models import Client, Payment, Membership, Routine, Progress, User, Gym, CheckIn, EmailSettings, GroupClass, ClassReservation, Trainer, Product, StockMovement
+from backend.models import Client, Payment, Membership, Routine, Progress, User, Gym, CheckIn, EmailSettings, GroupClass, ClassReservation, Trainer, Product, StockMovement, Challenge
 from backend.forms import GymForm
 from backend.utils.membership import effective_membership_price
 from backend.utils.tenant import get_current_gym_id, slugify_gym_name
@@ -440,6 +440,56 @@ def approve_gym(gym_id):
     db.session.commit()
     flash(f'Gimnasio "{gym.name}" aprobado correctamente.', 'success')
     return redirect(url_for('admin.pending_gyms'))
+
+
+# === Challenges ===
+
+@admin.route('/challenges', methods=['GET', 'POST'])
+@login_required
+def challenges():
+    if current_user.role == 'user':
+        return redirect(url_for('main.client_dashboard'))
+    gym_id = get_current_gym_id()
+
+    if request.method == 'POST' and current_user.role == 'admin':
+        name = request.form.get('name')
+        if name:
+            try:
+                end = datetime.fromisoformat(request.form.get('end_date', ''))
+            except (ValueError, TypeError):
+                flash('Fecha inválida.', 'danger')
+                return redirect(url_for('admin.challenges'))
+            c = Challenge(
+                creator_id=current_user.id,
+                name=name,
+                description=request.form.get('description', ''),
+                goal_type=request.form.get('goal_type', 'workouts'),
+                goal_value=int(request.form.get('goal_value', 5)),
+                xp_reward=int(request.form.get('xp_reward', 200)),
+                end_date=end,
+            )
+            db.session.add(c)
+            db.session.commit()
+            flash(f'Reto "{name}" creado.', 'success')
+        return redirect(url_for('admin.challenges'))
+
+    challenge_list = Challenge.query.order_by(Challenge.created_at.desc()).all()
+    return render_template('admin_challenges.html', challenges=challenge_list, now=datetime.utcnow())
+
+
+@admin.route('/challenge/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_challenge(id):
+    if current_user.role != 'admin':
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('main.index'))
+    c = Challenge.query.get_or_404(id)
+    from backend.models import ChallengeParticipant
+    ChallengeParticipant.query.filter_by(challenge_id=c.id).delete()
+    db.session.delete(c)
+    db.session.commit()
+    flash('Reto eliminado.', 'success')
+    return redirect(url_for('admin.challenges'))
 
 
 @admin.route('/email_config', methods=['GET', 'POST'])

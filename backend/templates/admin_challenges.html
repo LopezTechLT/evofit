@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <h2 class="mb-0">Retos</h2>
+</div>
+
+{% if current_user.role == 'admin' %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Nuevo reto</h5>
+        <form method="POST" class="row g-2">
+            <div class="col-md-4"><input name="name" class="form-control" placeholder="Nombre del reto" required></div>
+            <div class="col-md-2">
+                <select name="goal_type" class="form-select">
+                    <option value="workouts">Entrenos</option>
+                    <option value="days_streak">Días seguidos</option>
+                    <option value="kcal">Calorías</option>
+                    <option value="xp">XP</option>
+                </select>
+            </div>
+            <div class="col-md-2"><input name="goal_value" type="number" class="form-control" placeholder="Meta" value="5"></div>
+            <div class="col-md-2"><input name="xp_reward" type="number" class="form-control" placeholder="XP recompensa" value="200"></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-dark w-100">Crear</button></div>
+            <div class="col-md-6"><input name="description" class="form-control" placeholder="Descripción (opcional)"></div>
+            <div class="col-md-3"><input name="end_date" type="date" class="form-control" required></div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead><tr><th>Nombre</th><th>Meta</th><th>XP</th><th>Participantes</th><th>Creador</th><th>Vence</th><th></th></tr></thead>
+        <tbody>
+            {% for c in challenges %}
+            <tr>
+                <td>
+                    <strong>{{ c.name }}</strong>
+                    {% if c.description %}<br><small class="text-muted">{{ c.description }}</small>{% endif %}
+                </td>
+                <td>{{ c.goal_value }} {{ {'workouts': 'entrenos', 'days_streak': 'días', 'kcal': 'kcal', 'xp': 'XP'}.get(c.goal_type, c.goal_type) }}</td>
+                <td>{{ c.xp_reward }} XP</td>
+                <td>{{ c.participants|length }}</td>
+                <td>{{ c.creator.username }}</td>
+                <td>{{ c.end_date.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    {% if current_user.role == 'admin' %}
+                    <form method="POST" action="{{ url_for('admin.delete_challenge', id=c.id) }}" style="display:inline" onsubmit="return confirm('¿Eliminar reto?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-muted">Sin retos creados</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
