@@ -36,6 +36,7 @@
                         {% else %}
                             <a class="nav-link" href="{{ url_for('main.clients') }}">Clientes</a>
                             <a class="nav-link" href="{{ url_for('admin.dashboard') }}">Panel</a>
+                            <a class="nav-link" href="{{ url_for('admin.challenges') }}">Retos</a>
                         {% endif %}
                         <a class="nav-link" href="{{ url_for('auth.logout') }}">Cerrar sesión</a>
                     {% endif %}
