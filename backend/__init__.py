@@ -97,7 +97,7 @@ def create_app():
             '''))
             db.session.commit()
 
-        from backend.models import Gym, User
+        from backend.models import Gym, User, League
         if not Gym.query.first():
             default_gym = Gym(name='Gym Principal', slug='principal', plan='starter', approved=True)
             db.session.add(default_gym)
@@ -106,6 +106,31 @@ def create_app():
             admin = User(username='admin', email='admin@evofit.com', role='admin', is_super_admin=True, gym_id=default_gym.id)
             admin.set_password('admin123')
             db.session.add(admin)
+            db.session.commit()
+
+        if not League.query.first():
+            db.session.add_all([
+                League(name='Bronce', min_level=1, max_level=4, icon='🥉'),
+                League(name='Plata', min_level=5, max_level=9, icon='🥈'),
+                League(name='Oro', min_level=10, max_level=14, icon='🥇'),
+                League(name='Titan', min_level=15, max_level=999, icon='💎'),
+            ])
+            db.session.commit()
+
+        from backend.models import FitnessProfile, LeagueMember
+        from backend.utils.fitness import get_league_for_level, compute_level_from_xp
+        if League.query.first() and not LeagueMember.query.first():
+            for user in User.query.all():
+                existing = LeagueMember.query.filter_by(user_id=user.id, season=1).first()
+                if existing:
+                    continue
+                profile = FitnessProfile.query.filter_by(user_id=user.id).first()
+                level = compute_level_from_xp(profile.xp) if profile else 1
+                xp = profile.xp if profile else 0
+                league_name = get_league_for_level(level)
+                league = League.query.filter_by(name=league_name).first()
+                if league:
+                    db.session.add(LeagueMember(user_id=user.id, league_id=league.id, season=1, xp_earned=xp))
             db.session.commit()
 
     return app

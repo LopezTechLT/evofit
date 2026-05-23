@@ -527,13 +527,18 @@ def leaderboard():
     elif period == 'monthly':
         since -= timedelta(days=30)
 
+    gym_id = get_current_gym_id()
+
     query = db.session.query(
         User.id,
         User.username,
         db.func.coalesce(db.func.sum(WorkoutSession.xp_gained), 0).label('xp'),
         db.func.coalesce(db.func.sum(WorkoutSession.kcal_burned), 0).label('kcal'),
         db.func.count(WorkoutSession.id).label('sessions'),
-    ).join(WorkoutSession, WorkoutSession.user_id == User.id)
+    ).outerjoin(WorkoutSession, WorkoutSession.user_id == User.id)
+
+    if gym_id:
+        query = query.filter(User.gym_id == gym_id)
 
     if period != 'all':
         query = query.filter(WorkoutSession.started_at >= since)
@@ -565,18 +570,21 @@ def my_league():
         league_name = get_league_for_level(profile.level)
         league = League.query.filter_by(name=league_name).first()
         if not league:
-            return jsonify({'error': 'no_league'}), 404
+            league = League(name=league_name, min_level=1, max_level=999, icon='🥉')
+            db.session.add(league)
+            db.session.commit()
         member = LeagueMember(user_id=current_user.id, league_id=league.id, season=1, xp_earned=profile.xp)
         db.session.add(member)
         db.session.commit()
     else:
         league = member.league
 
-    # members sorted by xp
+    # members sorted by xp (same gym only)
+    gym_id = get_current_gym_id()
     members = (
         db.session.query(LeagueMember, User.username)
         .join(User, User.id == LeagueMember.user_id)
-        .filter(LeagueMember.league_id == league.id, LeagueMember.season == 1)
+        .filter(LeagueMember.league_id == league.id, LeagueMember.season == 1, User.gym_id == gym_id)
         .order_by(LeagueMember.xp_earned.desc())
         .all()
     )
