@@ -7,7 +7,7 @@ import { ProgressBar } from '../components/ProgressBar'
 import { Skeleton } from '../components/Skeleton'
 import { Confetti } from '../components/Confetti'
 
-type Phase = 'ready' | 'working' | 'rest' | 'done'
+type Phase = 'pregame' | 'ready' | 'working' | 'rest' | 'done'
 
 type ExerciseState = {
   /** current set index (0-based) */
@@ -30,6 +30,7 @@ type SavedState = {
   phase: Phase
   restSecondsLeft: number
   startedAt: string
+  paused: boolean
 }
 
 function saveState(s: SavedState) {
@@ -65,6 +66,8 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
   const [error, setError] = React.useState<string | null>(null)
   const [prevSession, setPrevSession] = React.useState<WeeklyProgressPoint | null>(null)
   const [showExitConfirm, setShowExitConfirm] = React.useState(false)
+  const [started, setStarted] = React.useState(false)
+  const [paused, setPaused] = React.useState(false)
 
   // Restore saved state
   React.useEffect(() => {
@@ -77,6 +80,8 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
       setTotalSeconds(saved.totalSeconds)
       setPhase(saved.phase)
       setRestSecondsLeft(saved.restSecondsLeft)
+      setStarted(true)
+      if (saved.paused) setPaused(true)
     }
   }, [props.routineId])
 
@@ -112,30 +117,30 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
 
   // Global timer
   React.useEffect(() => {
-    if (!props.routineId || finished) return
+    if (!props.routineId || finished || !started || paused) return
     const t = window.setInterval(() => setTotalSeconds((v) => v + 1), 1000)
     return () => window.clearInterval(t)
-  }, [props.routineId, finished])
+  }, [props.routineId, finished, started, paused])
 
   // Rest countdown
   React.useEffect(() => {
-    if (phase !== 'rest' || finished) return
+    if (phase !== 'rest' || finished || paused) return
     if (restSecondsLeft <= 0) {
       setPhase('ready')
       return
     }
     const t = window.setInterval(() => setRestSecondsLeft((v) => v - 1), 1000)
     return () => window.clearInterval(t)
-  }, [phase, restSecondsLeft, finished])
+  }, [phase, restSecondsLeft, finished, paused])
 
   // Persist state every 3s
   React.useEffect(() => {
     if (!routine || !sessionId || finished || finishing) return
     const t = window.setInterval(() => {
-      saveState({ routineId: props.routineId!, sessionId, routine, idx, exercises, totalSeconds, phase, restSecondsLeft, startedAt: new Date().toISOString() })
+      saveState({ routineId: props.routineId!, sessionId, routine, idx, exercises, totalSeconds, phase, restSecondsLeft, startedAt: new Date().toISOString(), paused })
     }, 3000)
     return () => window.clearInterval(t)
-  }, [routine, sessionId, idx, exercises, totalSeconds, phase, restSecondsLeft, finished, finishing, props.routineId])
+  }, [routine, sessionId, idx, exercises, totalSeconds, phase, restSecondsLeft, finished, finishing, props.routineId, paused])
 
   // Fetch prev session for comparison
   React.useEffect(() => {
@@ -157,7 +162,7 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
   }, 0) / routine.exercises.reduce((sum, e) => sum + e.sets, 0) : 0
 
   function tapRep() {
-    if (!currentEx || !exState || phase === 'rest') return
+    if (!currentEx || !exState || phase === 'rest' || paused) return
     setExercises((prev) => {
       const next = [...prev]
       const s = { ...next[idx] }
@@ -328,15 +333,47 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
     )
   }
 
+  // === PREGAME (start screen) ===
+  if (!started && routine) {
+    return (
+      <div className="space-y-4">
+        <GlassCard className="p-8 text-center">
+          <div className="text-5xl mb-4">🏋️</div>
+          <div className="text-2xl font-bold text-gray-900">{routine.name}</div>
+          <div className="mt-2 text-sm text-gray-500">{routine.exercises.length} ejercicios · {routine.exercises.reduce((s, e) => s + e.sets, 0)} series totales</div>
+          <div className="mt-6 space-y-2 text-sm text-gray-600">
+            {routine.exercises.map((e, i) => (
+              <div key={i} className="flex justify-between rounded-2xl bg-gray-50 px-4 py-2">
+                <span>{e.name}</span>
+                <span className="text-gray-400">{e.sets} × {e.reps}</span>
+              </div>
+            ))}
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setStarted(true)}
+            className="mt-6 w-full rounded-2xl bg-gray-900 py-3 text-base font-bold text-white hover:bg-gray-800"
+          >
+            Comenzar
+          </motion.button>
+        </GlassCard>
+      </div>
+    )
+  }
+
   // === MAIN WORKOUT SCREEN ===
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="text-lg font-semibold text-gray-900">{routine?.name ?? 'Entrenar'}</div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <button onClick={() => setPaused((p) => !p)} className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 shadow-sm">
+            {paused ? '▶ Reanudar' : '⏸ Pausar'}
+          </button>
           <button onClick={() => setMuted((m) => !m)} className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 shadow-sm">
-            Sonido: {muted ? 'Off' : 'On'}
+            {muted ? '🔇' : '🔊'}
           </button>
         </div>
       </div>
@@ -351,7 +388,19 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
       </GlassCard>
 
       {/* Current exercise card */}
-      <GlassCard className="p-4">
+      {paused && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30" onClick={() => setPaused(false)}>
+          <div className="rounded-3xl bg-white px-8 py-6 text-center shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-4xl mb-2">⏸</div>
+            <div className="text-lg font-bold text-gray-900">Entrenamiento pausado</div>
+            <div className="mt-1 text-sm text-gray-500">Tiempo total: {formatMMSS(totalSeconds)}</div>
+            <button onClick={() => setPaused(false)} className="mt-4 rounded-2xl bg-gray-900 px-6 py-2 text-sm font-semibold text-white hover:bg-gray-800">
+              Reanudar
+            </button>
+          </div>
+        </div>
+      )}
+      <GlassCard className={`p-4 ${paused ? 'opacity-40 pointer-events-none' : ''}`}>
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs uppercase tracking-widest text-gray-400">
