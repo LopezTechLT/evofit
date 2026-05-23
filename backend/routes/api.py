@@ -183,6 +183,12 @@ def me():
     league_name = member.league.name if member else get_league_for_level(profile.level)
     league_icon = member.league.icon if member else '🥉'
 
+    # Calculate weekly stats from actual sessions
+    since = datetime.utcnow() - timedelta(days=7)
+    sessions = WorkoutSession.query.filter(WorkoutSession.user_id == current_user.id, WorkoutSession.started_at >= since).all()
+    weekly_minutes = sum(int((s.total_seconds or 0) / 60) for s in sessions)
+    weekly_calories = sum(int(s.kcal_burned or 0) for s in sessions)
+
     return jsonify(
         {
             'id': current_user.id,
@@ -196,8 +202,8 @@ def me():
                 'level': profile.level,
                 'xpToNext': compute_xp_to_next(profile.level, profile.xp),
                 'streakDays': profile.streak_days,
-                'weeklyMinutes': profile.weekly_minutes,
-                'weeklyCalories': profile.weekly_calories,
+                'weeklyMinutes': weekly_minutes,
+                'weeklyCalories': weekly_calories,
             },
         }
     )
@@ -316,7 +322,6 @@ def fitness_workout_start():
 def fitness_workout_finish(session_id: int):
     payload = request.get_json(silent=True) or {}
     total_seconds = int(payload.get('totalSeconds') or 0)
-    kcal_burned = int(payload.get('kcalBurned') or 0)
 
     session = WorkoutSession.query.get_or_404(session_id)
     if session.user_id != current_user.id:
@@ -324,7 +329,8 @@ def fitness_workout_finish(session_id: int):
 
     session.finished_at = datetime.utcnow()
     session.total_seconds = max(0, total_seconds)
-    session.kcal_burned = max(0, kcal_burned)
+    # Calculate kcal server-side (~6 kcal per minute)
+    session.kcal_burned = max(0, int((session.total_seconds / 60) * 6))
 
     xp_gained = max(10, min(250, int((session.total_seconds / 60) * 5)))
     session.xp_gained = xp_gained
