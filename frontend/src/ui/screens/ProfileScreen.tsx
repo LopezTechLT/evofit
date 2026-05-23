@@ -1,7 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { User, Users, Medal, Target, Trophy, LogOut } from 'lucide-react'
-import { api, type ApiMe, type FeedPost, type MyChallenge, type FriendList } from '../../lib/api'
+import { User, Users, Medal, Target, Trophy, LogOut, Plus, Search, X } from 'lucide-react'
+import { api, type ApiMe, type FeedPost, type MyChallenge, type FriendList, type SocialUser } from '../../lib/api'
 import { GlassCard } from '../components/GlassCard'
 import { Skeleton } from '../components/Skeleton'
 import { ProgressBar } from '../components/ProgressBar'
@@ -14,6 +14,9 @@ export function ProfileScreen() {
   const [feed, setFeed] = React.useState<FeedPost[] | null>(null)
   const [myChallenges, setMyChallenges] = React.useState<MyChallenge[] | null>(null)
   const [friends, setFriends] = React.useState<FriendList | null>(null)
+  const [searchQ, setSearchQ] = React.useState('')
+  const [searchResults, setSearchResults] = React.useState<SocialUser[] | null>(null)
+  const [searching, setSearching] = React.useState(false)
 
   React.useEffect(() => {
     let alive = true
@@ -32,6 +35,26 @@ export function ProfileScreen() {
     }
     return () => { alive = false }
   }, [subTab])
+
+  React.useEffect(() => {
+    if (subTab !== 'friends' || !searchQ.trim()) {
+      setSearchResults(null)
+      return
+    }
+    const t = setTimeout(() => {
+      setSearching(true)
+      api.searchUsers(searchQ.trim()).then((d) => setSearchResults(d.items)).catch(() => setSearchResults([])).finally(() => setSearching(false))
+    }, 300)
+    return () => clearTimeout(t)
+  }, [searchQ, subTab])
+
+  async function handleFollow(userId: number) {
+    try {
+      await api.followUser(userId)
+      setSearchResults((prev) => prev?.map((u) => u.userId === userId ? { ...u, isFollowing: !u.isFollowing } : u) ?? null)
+      api.friends().then((d) => setFriends(d)).catch(() => {})
+    } catch {}
+  }
 
   const subtabs: Array<{ key: SubTab; label: string; icon: React.ReactNode }> = [
     { key: 'stats', label: 'Estadísticas', icon: <User size={14} /> },
@@ -138,6 +161,56 @@ export function ProfileScreen() {
       {/* Friends */}
       {subTab === 'friends' && (
         <GlassCard className="p-4">
+          {/* Search bar */}
+          <div className="relative mb-4">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
+              placeholder="Buscar usuarios..."
+              className="w-full rounded-2xl border border-gray-200 bg-gray-50 py-2 pl-9 pr-8 text-sm outline-none focus:border-gray-400"
+            />
+            {searchQ && (
+              <button onClick={() => setSearchQ('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X size={16} />
+              </button>
+            )}
+          </div>
+
+          {/* Search results */}
+          {searchQ.trim() && (
+            <div className="mb-4">
+              <div className="mb-2 text-xs font-semibold text-gray-500 uppercase tracking-widest">Resultados</div>
+              {searching ? (
+                <Skeleton className="h-10 w-full" />
+              ) : searchResults && searchResults.length === 0 ? (
+                <div className="text-sm text-gray-400">Sin resultados</div>
+              ) : (
+                <div className="space-y-2">
+                  {searchResults?.map((u) => (
+                    <div key={u.userId} className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-sm font-bold text-white">
+                        {u.username[0].toUpperCase()}
+                      </div>
+                      <span className="flex-1 text-sm font-semibold text-gray-900">{u.username}</span>
+                      <button
+                        onClick={() => handleFollow(u.userId)}
+                        className={[
+                          'rounded-xl px-3 py-1.5 text-xs font-semibold transition',
+                          u.isFollowing
+                            ? 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-100'
+                            : 'bg-gray-900 text-white hover:bg-gray-800',
+                        ].join(' ')}
+                      >
+                        {u.isFollowing ? 'Dejar' : 'Seguir'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {!friends ? (
             <Skeleton className="h-20 w-full" />
           ) : (
