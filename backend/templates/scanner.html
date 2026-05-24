@@ -46,7 +46,7 @@ function checkin(clientId) {
     })
     .then(r => r.json())
     .then(data => {
-        resultDiv.innerHTML = '<div class="alert alert-success mb-0">✓ ' + data.client + ' — ' + new Date(data.time).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) + '</div>';
+        resultDiv.innerHTML = '<div class="alert alert-success mb-0">OK ' + data.client + ' — ' + new Date(data.time).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) + '</div>';
         setTimeout(() => { scanning = true; resultDiv.innerHTML = ''; }, 2000);
     })
     .catch(() => {

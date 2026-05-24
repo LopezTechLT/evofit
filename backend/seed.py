@@ -100,14 +100,14 @@ def ensure_fitness_social_tables():
                 name VARCHAR(64) NOT NULL UNIQUE,
                 min_level INTEGER DEFAULT 1,
                 max_level INTEGER DEFAULT 999,
-                icon VARCHAR(16) DEFAULT '🥉',
+                icon VARCHAR(16) DEFAULT '[L]',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         '''))
-        db.session.execute(text("INSERT INTO fitness_league (name, min_level, max_level, icon) VALUES ('Bronce', 1, 4, '🥉')"))
-        db.session.execute(text("INSERT INTO fitness_league (name, min_level, max_level, icon) VALUES ('Plata', 5, 9, '🥈')"))
-        db.session.execute(text("INSERT INTO fitness_league (name, min_level, max_level, icon) VALUES ('Oro', 10, 14, '🥇')"))
-        db.session.execute(text("INSERT INTO fitness_league (name, min_level, max_level, icon) VALUES ('Titan', 15, 999, '💎')"))
+        db.session.execute(text("INSERT INTO fitness_league (name, min_level, max_level, icon) VALUES ('Bronce', 1, 4, '[B]')"))
+        db.session.execute(text("INSERT INTO fitness_league (name, min_level, max_level, icon) VALUES ('Plata', 5, 9, '[P]')"))
+        db.session.execute(text("INSERT INTO fitness_league (name, min_level, max_level, icon) VALUES ('Oro', 10, 14, '[O]')"))
+        db.session.execute(text("INSERT INTO fitness_league (name, min_level, max_level, icon) VALUES ('Titan', 15, 999, '[T]')"))
 
     if 'fitness_league_member' not in existing:
         db.session.execute(text('''

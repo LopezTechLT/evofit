@@ -147,7 +147,7 @@ export function ProfileScreen() {
           <div className="grid grid-cols-2 gap-3">
             <StatBox label="Nivel" value={`Lv ${me.fitness.level}`} sub={me.title} />
             <StatBox label="XP total" value={`${me.fitness.xp}`} sub={`Faltan ${me.fitness.xpToNext} XP`} />
-            <StatBox label="Racha" value={`${me.fitness.streakDays} días`} sub="Sigue así 🔥" />
+            <StatBox label="Racha" value={`${me.fitness.streakDays} dias`} sub="Sigue asi!" />
             <StatBox label="Liga" value={me.league} sub={me.leagueIcon} />
           </div>
         </GlassCard>
@@ -346,7 +346,7 @@ export function ProfileScreen() {
                         <div className="flex items-center justify-between">
                           <div className="text-sm font-semibold text-gray-900">{c.name}</div>
                           {c.completed ? (
-                            <span className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] text-emerald-700">Completado ✓</span>
+                            <span className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] text-emerald-700">Completado</span>
                           ) : (
                             <span className="text-xs text-gray-400">{c.progress}/{c.goalValue}</span>
                           )}
@@ -379,10 +379,10 @@ export function ProfileScreen() {
                             <div className="text-sm font-semibold text-gray-900">{c.name}</div>
                             {c.description && <div className="text-xs text-gray-500 mt-0.5">{c.description}</div>}
                             <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-gray-400">
-                              <span>🎯 {c.goalValue} {c.goalType === 'workouts' ? 'entrenos' : c.goalType === 'days_streak' ? 'días' : c.goalType === 'kcal' ? 'kcal' : 'XP'}</span>
-                              <span>⭐ {c.xpReward} XP</span>
-                              <span>👥 {c.participantCount} participantes</span>
-                              <span>👤 {c.creator}</span>
+                              <span>{c.goalValue} {c.goalType === 'workouts' ? 'entrenos' : c.goalType === 'days_streak' ? 'dias' : c.goalType === 'kcal' ? 'kcal' : 'XP'}</span>
+                              <span>{c.xpReward} XP</span>
+                              <span>{c.participantCount} participantes</span>
+                              <span>{c.creator}</span>
                             </div>
                           </div>
                           <button
@@ -390,7 +390,7 @@ export function ProfileScreen() {
                             disabled={joined}
                             className={['rounded-xl px-3 py-1.5 text-xs font-semibold transition shrink-0', joined ? 'bg-gray-200 text-gray-400 cursor-default' : 'bg-gray-900 text-white hover:bg-gray-800'].join(' ')}
                           >
-                            {joined ? 'Unido ✓' : 'Unirse'}
+                            {joined ? 'Unido' : 'Unirse'}
                           </button>
                         </div>
                         <div className="mt-2 text-[11px] text-gray-400">Vence: {new Date(c.endDate).toLocaleDateString('es-ES')}</div>

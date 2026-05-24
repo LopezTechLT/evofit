@@ -208,7 +208,7 @@ class League(db.Model):
     name = db.Column(db.String(64), unique=True, nullable=False)  # Bronce, Plata, Oro, Titan
     min_level = db.Column(db.Integer, default=1)
     max_level = db.Column(db.Integer, default=999)
-    icon = db.Column(db.String(16), default='🥉')
+    icon = db.Column(db.String(16), default='[L]')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     members = db.relationship('LeagueMember', backref='league', lazy=True)

@@ -26,7 +26,97 @@ def index():
 @login_required
 def fitness_app():
     # Vista integrada (no-React) para visualizar la API fitness dentro de Flask.
-    return render_template('fitness.html')
+    from backend.routes.api import _ensure_profile, _ensure_default_routines, _routine_to_dict
+    from backend.models import LeagueMember, WorkoutSession, BodyProgress
+    from backend.utils.fitness import get_league_for_level, get_level_title, compute_level_from_xp, compute_xp_to_next
+    from datetime import timedelta
+
+    # 1. User & Profile
+    profile = _ensure_profile(current_user.id)
+    profile.level = compute_level_from_xp(profile.xp)
+    db.session.commit()
+
+    member = LeagueMember.query.filter_by(user_id=current_user.id, season=1).first()
+    league_name = member.league.name if member else get_league_for_level(profile.level)
+    league_icon = member.league.icon if member else '[B]'
+
+    me_data = {
+        'username': current_user.username,
+        'title': get_level_title(profile.level),
+        'league': league_name,
+        'leagueIcon': league_icon,
+    }
+
+    # 2. Dashboard & Routine of Day
+    client = _get_current_client()
+    _ensure_default_routines(client)
+    today = datetime.utcnow().weekday()
+    routine_today = Routine.query.filter_by(client_id=client.id, day_of_week=today).first() if client else None
+
+    since = datetime.utcnow() - timedelta(days=7)
+    sessions = WorkoutSession.query.filter(WorkoutSession.user_id == current_user.id, WorkoutSession.started_at >= since).all()
+    weekly_minutes = sum(int((s.total_seconds or 0) / 60) for s in sessions)
+    weekly_kcal = sum(int(s.kcal_burned or 0) for s in sessions)
+
+    profile.weekly_minutes = weekly_minutes
+    profile.weekly_calories = weekly_kcal
+    db.session.commit()
+
+    def _greeting_for_hour() -> str:
+        hour = datetime.now().hour
+        if hour < 12:
+            return 'Buenos días'
+        if hour < 18:
+            return 'Buenas tardes'
+        return 'Buenas noches'
+
+    dash_data = {
+        'greeting': _greeting_for_hour(),
+        'routineOfDay': _routine_to_dict(routine_today) if routine_today else None,
+        'weekly': {
+            'minutes': weekly_minutes,
+            'kcal': weekly_kcal,
+            'sessions': len(sessions),
+        },
+        'streakDays': profile.streak_days,
+        'level': profile.level,
+        'xp': profile.xp,
+        'xpToNext': compute_xp_to_next(profile.level, profile.xp),
+    }
+
+    # 3. All Client Routines
+    routines = Routine.query.filter_by(client_id=client.id).order_by(Routine.id.desc()).all() if client else []
+    routines_data = {
+        'items': [_routine_to_dict(r) for r in routines]
+    }
+
+    # 4. Weekly progress points
+    items = (
+        BodyProgress.query.filter(BodyProgress.user_id == current_user.id, BodyProgress.date >= since)
+        .order_by(BodyProgress.date.asc())
+        .all()
+    )
+    weekly_data = {
+        'items': [
+            {
+                'date': p.date.date().isoformat(),
+                'minutes': int(p.minutes_trained or 0),
+                'kcal': int(p.kcal_burned or 0),
+                'weightKg': p.weight_kg,
+                'imc': p.imc,
+            }
+            for p in items
+        ]
+    }
+
+    initial_data = {
+        'me': me_data,
+        'dash': dash_data,
+        'routines': routines_data,
+        'weekly': weekly_data
+    }
+
+    return render_template('fitness.html', initial_data=initial_data)
 
 @main.route('/clients')
 @login_required

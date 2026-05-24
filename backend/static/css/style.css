@@ -155,7 +155,7 @@
 }
 
 .animate-card {
-    animation: float-card 1.2s ease both;
+    animation: none !important;
 }
 
 @keyframes float-card {
@@ -354,6 +354,46 @@ footer.footer {
     .badge {
         font-size: 0.7rem;
     }
+}
+
+/* ===== splash screen ===== */
+.splash-overlay {
+    display: none !important;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 9999;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Si quedó HTML viejo en caché, asegura que el contenido no quede oculto */
+#main-content {
+    opacity: 1 !important;
+    transition: none !important;
+}
+
+.splash-content {
+    text-align: center;
+}
+
+.splash-title {
+    font-size: clamp(3rem, 12vw, 8rem);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #111827 0%, #6b7280 50%, #111827 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: splashShimmer 1.5s ease-in-out infinite alternate;
+    margin: 0;
+}
+
+@keyframes splashShimmer {
+    0% { background-position: 0% center; }
+    100% { background-position: 100% center; }
 }
 
 /* ===== horizontal scroll for all tables without .table-responsive wrapper ===== */

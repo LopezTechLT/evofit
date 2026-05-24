@@ -1,6 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Flame, Trophy, Zap, Medal, TrendingUp } from 'lucide-react'
+import { Flame, Trophy, Zap, Medal, TrendingUp, ArrowLeft } from 'lucide-react'
 import { api } from '../../lib/api'
 import { GlassCard } from '../components/GlassCard'
 import { ProgressBar } from '../components/ProgressBar'
@@ -39,7 +39,7 @@ export function FitnessHome(props: { onQuickTrain: (routineId: number) => void }
   const level = dash?.level ?? 1
   const title = me?.title ?? 'Principiante'
   const league = me?.league ?? 'Bronce'
-  const leagueIcon = me?.leagueIcon ?? '🥉'
+  const leagueIcon = me?.leagueIcon ?? '[B]'
   const progress = xpToNext === 0 ? 1 : Math.max(0, Math.min(1, (xp % 250) / 250))
 
   return (
@@ -58,6 +58,12 @@ export function FitnessHome(props: { onQuickTrain: (routineId: number) => void }
             <span className="text-gray-500">{leagueIcon} {league}</span>
           </div>
         </div>
+        <a
+          href="http://127.0.0.1:5000"
+          className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-700 transition-all"
+        >
+          <ArrowLeft size={14} className="inline" /> Sitio
+        </a>
       </div>
 
       {/* Streak banner */}
@@ -69,7 +75,7 @@ export function FitnessHome(props: { onQuickTrain: (routineId: number) => void }
         >
           <Flame size={24} className="text-gray-700" />
           <div>
-            <div className="text-sm font-semibold text-gray-900">Racha de {dash.streakDays} días 🔥</div>
+            <div className="text-sm font-semibold text-gray-900">Racha de {dash.streakDays} dias</div>
             <div className="text-xs text-gray-500">¡Sigue así! Cada día cuenta.</div>
           </div>
         </motion.div>
@@ -139,3 +145,5 @@ function MiniStat(props: { label: string; value: string; icon: React.ReactNode }
     </div>
   )
 }
+
+

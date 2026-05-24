@@ -183,6 +183,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    const initialData = {{ initial_data | tojson | safe }};
     const routineOverlay = createOverlay('routineOverlay');
     const trainOverlay = createOverlay('trainOverlay');
 
@@ -215,22 +216,31 @@
     }
 
     async function loadFitness() {
-        const [meRes, dashRes, routinesRes, weeklyRes] = await Promise.all([
-            fetch('/api/me', { credentials: 'include' }),
-            fetch('/api/fitness/dashboard', { credentials: 'include' }),
-            fetch('/api/client/routines', { credentials: 'include' }),
-            fetch('/api/fitness/progress/weekly', { credentials: 'include' })
-        ]);
+        let me, dash, routines, weekly;
 
-        if (!meRes.ok || !dashRes.ok) {
-            document.getElementById('hello').textContent = 'Inicia sesión para ver Fitness';
-            return;
+        if (typeof initialData !== 'undefined' && initialData) {
+            me = initialData.me;
+            dash = initialData.dash;
+            routines = initialData.routines;
+            weekly = initialData.weekly;
+        } else {
+            const [meRes, dashRes, routinesRes, weeklyRes] = await Promise.all([
+                fetch('/api/me', { credentials: 'include' }),
+                fetch('/api/fitness/dashboard', { credentials: 'include' }),
+                fetch('/api/client/routines', { credentials: 'include' }),
+                fetch('/api/fitness/progress/weekly', { credentials: 'include' })
+            ]);
+
+            if (!meRes.ok || !dashRes.ok) {
+                document.getElementById('hello').textContent = 'Inicia sesión para ver Fitness';
+                return;
+            }
+
+            me = await meRes.json();
+            dash = await dashRes.json();
+            routines = routinesRes.ok ? await routinesRes.json() : { items: [] };
+            weekly = weeklyRes.ok ? await weeklyRes.json() : { items: [] };
         }
-
-            const me = await meRes.json();
-            const dash = await dashRes.json();
-        const routines = routinesRes.ok ? await routinesRes.json() : { items: [] };
-        const weekly = weeklyRes.ok ? await weeklyRes.json() : { items: [] };
 
         document.getElementById('greeting').textContent = dash.greeting || 'Fitness';
         document.getElementById('hello').textContent = `Hola, ${me.username}`;
@@ -479,7 +489,7 @@
                                 <div class="mt-4 d-flex flex-wrap gap-2">
                                     <button class="btn btn-dark" type="button" id="prevEx" ${idx === 0 ? 'disabled' : ''}>Anterior</button>
                                     <button class="btn btn-dark" type="button" id="nextEx" ${idx + 1 >= exercises.length ? 'disabled' : ''}>Siguiente</button>
-                                    <button class="btn btn-outline-secondary" type="button" id="markSet">Serie ✓ (${seriesDone[idx]})</button>
+                                    <button class="btn btn-outline-secondary" type="button" id="markSet">Serie (${seriesDone[idx]})</button>
                                     ${phase === 'exercise'
                                         ? `<button class="btn btn-outline-secondary" type="button" id="startRest">Iniciar descanso</button>`
                                         : `<button class="btn btn-outline-secondary" type="button" id="skipRest">Saltar descanso</button>`}

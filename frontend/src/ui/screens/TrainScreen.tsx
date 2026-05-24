@@ -1,5 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import { Play, Pause } from 'lucide-react'
 import { api, type RoutineDetail, type WeeklyProgressPoint } from '../../lib/api'
 import { formatMMSS } from '../../lib/time'
 import { GlassCard } from '../components/GlassCard'
@@ -161,34 +162,26 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
     return sum + doneSets
   }, 0) / routine.exercises.reduce((sum, e) => sum + e.sets, 0) : 0
 
-  function tapRep() {
+  function completeSet() {
     if (!currentEx || !exState || phase === 'rest' || paused) return
     setExercises((prev) => {
       const next = [...prev]
       const s = { ...next[idx] }
-      if (s.repsDone < currentEx.reps) {
-        s.repsDone += 1
-      }
-      if (s.repsDone >= currentEx.reps) {
-        // Set completed
-        if (s.currentSet + 1 >= currentEx.sets) {
-          s.setsDone = true
-          s.currentSet = currentEx.sets
-          // Move to next exercise after brief delay
-          if (isLastExercise) {
-            setPhase('done')
-          } else {
-            setPhase('rest')
-            setRestSecondsLeft(currentEx.restSeconds || 60)
-          }
+      if (s.currentSet + 1 >= currentEx.sets) {
+        s.setsDone = true
+        s.currentSet = currentEx.sets
+        if (isLastExercise) {
+          setPhase('done')
         } else {
-          s.currentSet += 1
           setPhase('rest')
           setRestSecondsLeft(currentEx.restSeconds || 60)
         }
-        ping(muted)
-        s.repsDone = 0
+      } else {
+        s.currentSet += 1
+        setPhase('rest')
+        setRestSecondsLeft(currentEx.restSeconds || 60)
       }
+      ping(muted)
       next[idx] = s
       return next
     })
@@ -230,8 +223,8 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
         minutes: Math.floor(totalSeconds / 60),
         incomplete,
       })
-    } catch {
-      setError('Error al finalizar. Intenta de nuevo.')
+    } catch (e) {
+      setError(`Error al finalizar: ${e instanceof Error ? e.message : 'desconocido'}`)
     } finally {
       setFinishing(false)
     }
@@ -244,7 +237,7 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
 
   async function handleShare() {
     if (!result) return
-    const text = `🔥 Acabo de completar "${routine?.name ?? 'mi entrenamiento'}" en EVOFIT\n\n⏱ ${result.minutes} min · ${result.kcal} kcal\n⭐ +${result.xp} XP · Nivel ${result.level} · Racha ${result.streak} días\n\n¡Únete al reto!`
+    const text = `Acabo de completar "${routine?.name ?? 'mi entrenamiento'}" en EVOFIT\n\n${result.minutes} min · ${result.kcal} kcal\n+${result.xp} XP · Nivel ${result.level} · Racha ${result.streak} dias`
     try { await navigator.clipboard.writeText(text) } catch {}
   }
 
@@ -267,9 +260,9 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }} className="space-y-4">
           <GlassCard className="p-6 text-center">
             {result.incomplete ? (
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 200 }} className="text-5xl mb-3">⚠️</motion.div>
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 200 }} className="text-5xl mb-3 text-amber-500">!</motion.div>
             ) : (
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 200 }} className="text-5xl mb-3">💪</motion.div>
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 200 }} className="text-5xl mb-3 text-emerald-500">+</motion.div>
             )}
             <div className="text-xl font-bold text-gray-900">{result.incomplete ? 'Rutina incompleta' : '¡Entrenamiento completado!'}</div>
             <div className="mt-1 text-sm text-gray-500">{routine?.name}</div>
@@ -294,7 +287,7 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
 
             {prevSession && (betterKcal || betterMinutes) && !result.incomplete && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-3 rounded-2xl bg-emerald-50 border border-emerald-200 p-3 text-sm">
-                <span className="font-semibold text-emerald-700">🔥 Nuevo récord personal!</span>
+                <span className="font-semibold text-emerald-700">Nuevo record personal!</span>
                 <div className="text-emerald-600">
                   {betterMinutes && `+${result.minutes - (prevSession.minutes || 0)} min · `}
                   {betterKcal && `+${result.kcal - (prevSession.kcal || 0)} kcal vs última sesión`}
@@ -338,22 +331,22 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
     return (
       <div className="space-y-4">
         <GlassCard className="p-8 text-center">
-          <div className="text-5xl mb-4">🏋️</div>
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, delay: 0.1 }} className="text-5xl mb-4 text-gray-300">=</motion.div>
           <div className="text-2xl font-bold text-gray-900">{routine.name}</div>
           <div className="mt-2 text-sm text-gray-500">{routine.exercises.length} ejercicios · {routine.exercises.reduce((s, e) => s + e.sets, 0)} series totales</div>
           <div className="mt-6 space-y-2 text-sm text-gray-600">
             {routine.exercises.map((e, i) => (
-              <div key={i} className="flex justify-between rounded-2xl bg-gray-50 px-4 py-2">
-                <span>{e.name}</span>
-                <span className="text-gray-400">{e.sets} × {e.reps}</span>
-              </div>
+              <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.05 }} className="flex justify-between rounded-2xl bg-gray-50 border border-gray-200 px-4 py-2.5">
+                <span className="font-medium text-gray-800">{e.name}</span>
+                <span className="text-gray-400 tabular-nums">{e.sets} × {e.reps}</span>
+              </motion.div>
             ))}
           </div>
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setStarted(true)}
-            className="mt-6 w-full rounded-2xl bg-gray-900 py-3 text-base font-bold text-white hover:bg-gray-800"
+            className="mt-6 w-full rounded-2xl bg-gray-900 py-3.5 text-base font-bold text-white hover:bg-gray-800 transition-all"
           >
             Comenzar
           </motion.button>
@@ -369,12 +362,24 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
       <div className="flex items-center justify-between">
         <div className="text-lg font-semibold text-gray-900">{routine?.name ?? 'Entrenar'}</div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setPaused((p) => !p)} className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 shadow-sm">
-            {paused ? '▶ Reanudar' : '⏸ Pausar'}
-          </button>
-          <button onClick={() => setMuted((m) => !m)} className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 shadow-sm">
-            {muted ? '🔇' : '🔊'}
-          </button>
+          <motion.button
+            layout
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setPaused((p) => !p)}
+            className="rounded-full bg-white/80 backdrop-blur-sm border border-gray-200/80 px-4 py-2 text-xs font-semibold text-gray-700 shadow-lg shadow-black/5 hover:bg-white hover:shadow-xl hover:border-gray-300 transition-all flex items-center gap-1.5"
+          >
+            <span className="text-sm">{paused ? <Play size={16} /> : <Pause size={16} />}</span>
+            <span>{paused ? 'Reanudar' : 'Pausar'}</span>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setMuted((m) => !m)}
+            className="rounded-full bg-white/80 backdrop-blur-sm border border-gray-200/80 px-3 py-2 text-xs shadow-lg shadow-black/5 hover:bg-white hover:shadow-xl hover:border-gray-300 transition-all"
+          >
+            {muted ? '[X]' : '[O]'}
+          </motion.button>
         </div>
       </div>
 
@@ -389,16 +394,16 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
 
       {/* Current exercise card */}
       {paused && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30" onClick={() => setPaused(false)}>
-          <div className="rounded-3xl bg-white px-8 py-6 text-center shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="text-4xl mb-2">⏸</div>
-            <div className="text-lg font-bold text-gray-900">Entrenamiento pausado</div>
-            <div className="mt-1 text-sm text-gray-500">Tiempo total: {formatMMSS(totalSeconds)}</div>
-            <button onClick={() => setPaused(false)} className="mt-4 rounded-2xl bg-gray-900 px-6 py-2 text-sm font-semibold text-white hover:bg-gray-800">
-              Reanudar
-            </button>
-          </div>
-        </div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setPaused(false)}>
+          <motion.div initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 200 }} className="rounded-3xl bg-white px-10 py-8 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-5xl mb-3 text-gray-300"><Pause size={48} className="text-gray-300" /></div>
+            <div className="text-xl font-bold text-gray-900">Entrenamiento pausado</div>
+            <div className="mt-2 text-sm text-gray-500">Tiempo total: {formatMMSS(totalSeconds)}</div>
+            <motion.button whileHover={{ scale: 1.02, boxShadow: '0 0 25px rgba(255,107,53,0.4)' }} whileTap={{ scale: 0.96 }} onClick={() => setPaused(false)} className="mt-5 w-full rounded-full bg-gradient-to-r from-orange-500 via-rose-500 to-pink-500 py-3.5 text-sm font-black text-white tracking-wide shadow-lg shadow-orange-500/30 transition-all duration-300 border border-white/20">
+              <Play size={20} className="inline" />  REANUDAR
+            </motion.button>
+          </motion.div>
+        </motion.div>
       )}
       <GlassCard className={`p-4 ${paused ? 'opacity-40 pointer-events-none' : ''}`}>
         <div className="flex items-center justify-between">
@@ -456,7 +461,7 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
             {exState?.setsDone ? (
               /* Exercise completed, prompt to move on */
               <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-center">
-                <div className="text-sm font-semibold text-emerald-700">✅ Ejercicio completado</div>
+                <div className="text-sm font-semibold text-emerald-700">Ejercicio completado</div>
                 {!isLastExercise && (
                   <button onClick={nextExercise} className="mt-2 rounded-xl bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800">
                     Siguiente ejercicio
@@ -464,17 +469,18 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
                 )}
               </div>
             ) : (
-              /* Working - tap to count reps */
+              /* Working - complete set */
               <motion.button
                 whileTap={{ scale: 0.95 }}
-                onTap={tapRep}
-                className="w-full rounded-2xl bg-gray-900 py-8 text-center text-white hover:bg-gray-800 active:bg-gray-700 select-none"
+                onTap={completeSet}
+                className="w-full rounded-2xl bg-gradient-to-b from-gray-800 to-gray-900 py-8 text-center text-white shadow-lg shadow-gray-900/30 hover:from-gray-900 hover:to-black active:from-black select-none border border-gray-700"
               >
-                <div className="text-4xl font-bold tabular-nums">
-                  {exState?.repsDone ?? 0}
+                <div className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Toca al completar</div>
+                <div className="mt-1 text-5xl font-black tabular-nums">
+                  {exState?.currentSet !== undefined ? exState.currentSet + 1 : 1}/{currentEx?.sets ?? 0}
                 </div>
-                <div className="mt-1 text-sm text-gray-300">
-                  toca por cada repetición ({currentEx?.reps ?? 0})
+                <div className="mt-1 text-sm text-gray-400">
+                  serie · {currentEx?.reps ?? 0} reps
                 </div>
               </motion.button>
             )}
@@ -496,7 +502,7 @@ export function TrainScreen(props: { routineId: number | null; onFinish?: () => 
         {allDone && (
           <div className="mt-4">
             <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-center">
-              <div className="text-sm font-semibold text-emerald-700">🎉 Todos los ejercicios completados</div>
+              <div className="text-sm font-semibold text-emerald-700">Todos los ejercicios completados</div>
               <button onClick={() => finish(false)} disabled={finishing} className="mt-3 w-full rounded-2xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">
                 {finishing ? 'Finalizando…' : 'Finalizar entrenamiento'}
               </button>
@@ -551,3 +557,6 @@ function ping(muted: boolean) {
     setTimeout(() => { o.stop(); ctx.close() }, 120)
   } catch {}
 }
+
+
+

@@ -102,7 +102,7 @@ export function RankingScreen() {
 
 function LeaderboardRow(props: { rank: number; username: string; xp: number; kcal?: number; sessions?: number }) {
   const colors = ['text-gray-900', 'text-gray-500', 'text-gray-600']
-  const icons = ['🥇', '🥈', '🥉']
+  const icons = ['#1', '#2', '#3']
   const isPodium = props.rank <= 3
   const colorClass = isPodium ? colors[props.rank - 1] : 'text-gray-400'
 

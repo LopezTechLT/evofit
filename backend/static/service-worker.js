@@ -1,5 +1,5 @@
-const CACHE = 'evofit-v1'
-const STATIC_CACHE = 'evofit-static-v1'
+const CACHE = 'evofit-v2'
+const STATIC_CACHE = 'evofit-static-v2'
 
 self.addEventListener('install', (e) => {
   e.waitUntil(

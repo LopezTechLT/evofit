@@ -110,10 +110,10 @@ def create_app():
 
         if not League.query.first():
             db.session.add_all([
-                League(name='Bronce', min_level=1, max_level=4, icon='🥉'),
-                League(name='Plata', min_level=5, max_level=9, icon='🥈'),
-                League(name='Oro', min_level=10, max_level=14, icon='🥇'),
-                League(name='Titan', min_level=15, max_level=999, icon='💎'),
+                League(name='Bronce', min_level=1, max_level=4, icon='[B]'),
+                League(name='Plata', min_level=5, max_level=9, icon='[P]'),
+                League(name='Oro', min_level=10, max_level=14, icon='[O]'),
+                League(name='Titan', min_level=15, max_level=999, icon='[T]'),
             ])
             db.session.commit()
 

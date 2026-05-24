@@ -159,8 +159,8 @@ def _ensure_achievements_catalog():
         return
     db.session.add_all(
         [
-            Achievement(code='first_workout', name='Primer entrenamiento', description='Completaste tu primer entrenamiento.', icon='🏆'),
-            Achievement(code='streak_7', name='Racha 7 días', description='Entrenaste 7 días seguidos.', icon='🔥'),
+            Achievement(code='first_workout', name='Primer entrenamiento', description='Completaste tu primer entrenamiento.', icon='[T]'),
+            Achievement(code='streak_7', name='Racha 7 días', description='Entrenaste 7 días seguidos.', icon='[F]'),
         ]
     )
     db.session.commit()
@@ -181,7 +181,7 @@ def me():
 
     member = LeagueMember.query.filter_by(user_id=current_user.id, season=1).first()
     league_name = member.league.name if member else get_league_for_level(profile.level)
-    league_icon = member.league.icon if member else '🥉'
+    league_icon = member.league.icon if member else '[B]'
 
     # Calculate weekly stats from actual sessions
     since = datetime.utcnow() - timedelta(days=7)
@@ -381,15 +381,15 @@ def fitness_workout_finish(session_id: int):
     # Feed post
     _create_feed_post(
         current_user.id, 'workout',
-        f'{current_user.username} completó un entrenamiento 🔥',
-        {'xp': xp_gained, 'kcal': kcal_burned, 'seconds': total_seconds},
+        f'{current_user.username} completo un entrenamiento',
+        {'xp': xp_gained, 'kcal': session.kcal_burned, 'seconds': total_seconds},
     )
 
     # Level-up feed post
     if level_ups > 0:
         _create_feed_post(
             current_user.id, 'level_up',
-            f'{current_user.username} subió a nivel {profile.level} ({get_level_title(profile.level)}) 🏆',
+            f'{current_user.username} subio a nivel {profile.level} ({get_level_title(profile.level)})',
             {'level': profile.level, 'title': get_level_title(profile.level)},
         )
         # Auto promote league
@@ -400,7 +400,7 @@ def fitness_workout_finish(session_id: int):
             member.league_id = league.id
             _create_feed_post(
                 current_user.id, 'league_up',
-                f'{current_user.username} ascendió a liga {league.name} {league.icon}',
+                f'{current_user.username} ascendio a liga {league.name}',
             )
 
     db.session.commit()
@@ -576,7 +576,7 @@ def my_league():
         league_name = get_league_for_level(profile.level)
         league = League.query.filter_by(name=league_name).first()
         if not league:
-            league = League(name=league_name, min_level=1, max_level=999, icon='🥉')
+            league = League(name=league_name, min_level=1, max_level=999, icon='[L]')
             db.session.add(league)
             db.session.commit()
         member = LeagueMember(user_id=current_user.id, league_id=league.id, season=1, xp_earned=profile.xp)
@@ -841,7 +841,7 @@ def profile_detail(user_id: int):
     # League
     member = LeagueMember.query.filter_by(user_id=target.id, season=1).first()
     league_name = member.league.name if member else get_league_for_level(level)
-    league_icon = member.league.icon if member else '🥉'
+    league_icon = member.league.icon if member else '[B]'
 
     # Stats
     total_sessions = WorkoutSession.query.filter_by(user_id=target.id).count()
