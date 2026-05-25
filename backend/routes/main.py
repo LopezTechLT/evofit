@@ -6,7 +6,7 @@ from backend.models import Client, Membership, Payment, Routine, Progress, Check
 from backend.forms import ClientForm, MembershipForm, PaymentForm, RoutineForm, ProgressForm
 from backend.utils.membership import effective_membership_price
 from backend.utils.tenant import get_current_gym_id
-from backend.face_recognizer import register_face, recognize, has_faces
+from backend.face_recognizer import register_face, recognize, has_faces, is_available
 import qrcode
 import os
 import io
@@ -477,6 +477,9 @@ def qr_scan():
 @main.route('/face/register', methods=['GET'])
 @login_required
 def face_register_page():
+    if not is_available():
+        flash('OpenCV no esta disponible en este servidor. El registro facial requiere OpenCV.')
+        return redirect(url_for('main.clients'))
     clients = Client.query.filter_by(gym_id=get_current_gym_id()).all()
     return render_template('face_register.html', clients=clients)
 
@@ -497,6 +500,9 @@ def face_register_capture(client_id):
 @main.route('/face/checkin', methods=['GET'])
 @login_required
 def face_checkin_page():
+    if not is_available():
+        flash('OpenCV no esta disponible en este servidor. El check-in facial requiere OpenCV.')
+        return redirect(url_for('main.checkins'))
     return render_template('face_checkin.html')
 
 
