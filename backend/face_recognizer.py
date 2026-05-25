@@ -1,11 +1,22 @@
 import os
-import numpy as np
 
 FACES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'faces')
 FACE_SIZE = (100, 100)
+_np = None
 _cv2 = None
 
 os.makedirs(FACES_DIR, exist_ok=True)
+
+
+def _get_np():
+    global _np
+    if _np is None:
+        try:
+            import numpy
+            _np = numpy
+        except ImportError:
+            return None
+    return _np
 
 
 def _get_cv2():
@@ -21,7 +32,8 @@ def _get_cv2():
 
 def _detect_face(image_bytes: bytes):
     cv2 = _get_cv2()
-    if cv2 is None:
+    np = _get_np()
+    if cv2 is None or np is None:
         return None, None
     cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
     img_array = np.frombuffer(image_bytes, np.uint8)
@@ -43,7 +55,8 @@ def _detect_face(image_bytes: bytes):
 
 def _vectorize(face_gray):
     cv2 = _get_cv2()
-    if cv2 is None:
+    np = _get_np()
+    if cv2 is None or np is None:
         return None
     resized = cv2.resize(face_gray, FACE_SIZE)
     return resized.flatten().astype(np.float32)
@@ -71,7 +84,8 @@ def has_faces(client_id: int) -> bool:
 
 def recognize(image_bytes: bytes, distance_threshold: float = 4500.0):
     cv2 = _get_cv2()
-    if cv2 is None:
+    np = _get_np()
+    if cv2 is None or np is None:
         return None, None
     face_region, preview = _detect_face(image_bytes)
     if face_region is None:
@@ -105,4 +119,4 @@ def recognize(image_bytes: bytes, distance_threshold: float = 4500.0):
 
 
 def is_available() -> bool:
-    return _get_cv2() is not None
+    return _get_cv2() is not None and _get_np() is not None
