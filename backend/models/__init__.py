@@ -112,6 +112,7 @@ class FaceEmbedding(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
     embedding = db.Column(db.Text, nullable=False)  # JSON: list of 128 floats
+    image = db.Column(db.LargeBinary, nullable=True)  # JPEG bytes of face crop
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 

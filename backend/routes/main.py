@@ -12,6 +12,7 @@ import os
 import io
 from PIL import Image
 from werkzeug.utils import secure_filename
+import base64
 import json
 
 main = Blueprint('main', __name__)
@@ -491,7 +492,13 @@ def face_register_capture(client_id):
     data = request.get_json(silent=True)
     if not data or 'embedding' not in data:
         return jsonify({'error': 'No embedding data'}), 400
-    ok = register_face(client.id, data['embedding'])
+    image_bytes = None
+    if 'image' in data and data['image']:
+        try:
+            image_bytes = base64.b64decode(data['image'])
+        except Exception:
+            pass
+    ok = register_face(client.id, data['embedding'], image_bytes)
     if not ok:
         return jsonify({'error': 'Embedding invalido. Asegurate de estar bien iluminado y frente a la camara.'}), 400
     return jsonify({'message': f'Rostro registrado para {client.name}'})
@@ -536,8 +543,20 @@ def face_list(client_id):
     client = Client.query.filter_by(id=client_id, gym_id=get_current_gym_id()).first_or_404()
     faces = FaceEmbedding.query.filter_by(client_id=client.id).order_by(FaceEmbedding.created_at.desc()).all()
     return jsonify({
-        'faces': [{'id': f.id, 'created_at': f.created_at.isoformat() if f.created_at else None} for f in faces]
+        'faces': [{'id': f.id, 'has_image': f.image is not None, 'created_at': f.created_at.isoformat() if f.created_at else None} for f in faces]
     })
+
+
+@main.route('/face/image/<int:face_id>')
+@login_required
+def face_image(face_id):
+    fe = FaceEmbedding.query.get_or_404(face_id)
+    client = Client.query.filter_by(id=fe.client_id, gym_id=get_current_gym_id()).first()
+    if not client:
+        return jsonify({'error': 'No autorizado'}), 403
+    if not fe.image:
+        return jsonify({'error': 'Sin imagen'}), 404
+    return make_response((fe.image, 200, {'Content-Type': 'image/jpeg'}))
 
 
 @main.route('/face/delete/<int:face_id>', methods=['POST'])

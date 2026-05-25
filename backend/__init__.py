@@ -102,10 +102,16 @@ def create_app():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     client_id INTEGER NOT NULL REFERENCES client(id),
                     embedding TEXT NOT NULL,
+                    image BLOB,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             '''))
             db.session.commit()
+        else:
+            cols_face = [c['name'] for c in inspector.get_columns('face_embedding')]
+            if 'image' not in cols_face:
+                db.session.execute(db.text('ALTER TABLE face_embedding ADD COLUMN image BLOB'))
+                db.session.commit()
 
         from backend.models import Gym, User, League
         if not Gym.query.first():

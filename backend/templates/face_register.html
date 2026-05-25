@@ -103,13 +103,19 @@ async function loadCaptures(clientId) {
         }
         let html = '<div class="d-flex justify-content-between align-items-center mb-1"><strong class="small">Capturas (' + data.faces.length + ')</strong>';
         html += '<button class="btn btn-outline-danger btn-sm" onclick="deleteAll(' + clientId + ')">Eliminar todas</button></div>';
-        html += '<div class="list-group small">';
+        html += '<div class="row g-1">';
         for (const f of data.faces) {
-            const date = f.created_at ? new Date(f.created_at).toLocaleString('es-CO') : '—';
-            html += '<div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1">';
-            html += '<span>#' + f.id + ' — ' + date + '</span>';
-            html += '<button class="btn btn-outline-danger btn-sm py-0" onclick="deleteFace(' + f.id + ', ' + clientId + ')">Eliminar</button>';
-            html += '</div>';
+            html += '<div class="col-4 col-md-3">';
+            html += '<div class="card">';
+            if (f.has_image) {
+                html += '<img src="/face/image/' + f.id + '" class="card-img-top" style="aspect-ratio:1;object-fit:cover" alt="face">';
+            } else {
+                html += '<div class="card-img-top bg-secondary d-flex align-items-center justify-content-center text-white small" style="aspect-ratio:1">Sin img</div>';
+            }
+            html += '<div class="card-body p-1 text-center">';
+            html += '<small class="text-muted">#' + f.id + '</small>';
+            html += '<button class="btn btn-outline-danger btn-sm w-100 mt-1 py-0" onclick="deleteFace(' + f.id + ', ' + clientId + ')">Eliminar</button>';
+            html += '</div></div></div>';
         }
         html += '</div>';
         capturesList.innerHTML = html;
@@ -208,9 +214,7 @@ function startFaceDetection() {
                 faceStatusDot.style.background = '#f87171';
                 faceStatusText.textContent = 'Sin rostro';
             }
-        } catch (e) {
-            // ignore
-        }
+        } catch (e) {}
     }, 500);
 }
 
@@ -227,10 +231,28 @@ captureBtn.addEventListener('click', async () => {
             return;
         }
         const embedding = Array.from(detection.descriptor);
+
+        // Capture face image from video
+        const snapCanvas = document.createElement('canvas');
+        const box = detection.detection.box;
+        const margin = 0.3;
+        const cx = box.x + box.width / 2;
+        const cy = box.y + box.height / 2;
+        const size = Math.max(box.width, box.height) * (1 + margin);
+        const sx = Math.max(0, cx - size / 2);
+        const sy = Math.max(0, cy - size / 2);
+        const sw = Math.min(video.videoWidth - sx, size);
+        const sh = Math.min(video.videoHeight - sy, size);
+        snapCanvas.width = 150;
+        snapCanvas.height = 150;
+        const sctx = snapCanvas.getContext('2d');
+        sctx.drawImage(video, sx, sy, sw, sh, 0, 0, 150, 150);
+        const imageBase64 = snapCanvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+
         const res = await fetch('/face/register/' + currentClientId, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ embedding })
+            body: JSON.stringify({ embedding, image: imageBase64 })
         });
         const data = await res.json();
         if (data.error) {

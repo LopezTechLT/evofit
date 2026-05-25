@@ -4,10 +4,10 @@ from backend import db
 from backend.models import FaceEmbedding
 
 
-def register_face(client_id: int, embedding: list) -> bool:
+def register_face(client_id: int, embedding: list, image_bytes: bytes = None) -> bool:
     if not embedding or len(embedding) != 128:
         return False
-    fe = FaceEmbedding(client_id=client_id, embedding=json.dumps(embedding))
+    fe = FaceEmbedding(client_id=client_id, embedding=json.dumps(embedding), image=image_bytes)
     db.session.add(fe)
     db.session.commit()
     return True
