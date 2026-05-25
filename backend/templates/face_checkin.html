@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Check-in facial</h2>
+<p class="text-muted">Mira a la camara para registrar tu entrada.</p>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <button id="startBtn" class="btn btn-dark mb-3">Iniciar camara</button>
+                <video id="video" class="img-fluid rounded" style="max-width:100%;height:auto;display:none" playsinline></video>
+                <canvas id="canvas" class="d-none"></canvas>
+                <div id="result" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const resultDiv = document.getElementById('result');
+const startBtn = document.getElementById('startBtn');
+let stream = null;
+let scanning = false;
+let scanTimeout = null;
+
+startBtn.addEventListener('click', () => {
+    startBtn.disabled = true;
+    startBtn.textContent = 'Iniciando...';
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+        .then(s => {
+            stream = s;
+            video.srcObject = s;
+            video.style.display = '';
+            video.play();
+            startBtn.textContent = 'Camara activa';
+            scanning = true;
+            scanLoop();
+        })
+        .catch(() => {
+            resultDiv.innerHTML = '<div class="alert alert-danger mb-0">Camara no disponible</div>';
+            startBtn.disabled = false;
+            startBtn.textContent = 'Reintentar';
+        });
+});
+
+function scanLoop() {
+    if (!scanning) return;
+    if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+        requestAnimationFrame(scanLoop);
+        return;
+    }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    canvas.toBlob(blob => {
+        fetch('/face/checkin/scan', { method: 'POST', body: blob })
+            .then(r => r.json())
+            .then(data => {
+                if (data.client) {
+                    scanning = false;
+                    resultDiv.innerHTML = '<div class="alert alert-success mb-0">Bienvenido ' + data.client + ' — ' + new Date(data.time).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) + '</div>';
+                    setTimeout(() => {
+                        resultDiv.innerHTML = '';
+                        scanning = true;
+                        scanLoop();
+                    }, 3000);
+                } else if (data.error) {
+                    resultDiv.innerHTML = '<div class="alert alert-danger mb-0">' + data.error + '</div>';
+                    setTimeout(() => {
+                        resultDiv.innerHTML = '';
+                        if (scanning) scanLoop();
+                    }, 1500);
+                    return;
+                } else {
+                    if (scanning) requestAnimationFrame(scanLoop);
+                }
+            })
+            .catch(() => {
+                if (scanning) requestAnimationFrame(scanLoop);
+            });
+    }, 'image/jpeg');
+}
+</script>
+{% endblock %}

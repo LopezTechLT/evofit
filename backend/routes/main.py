@@ -1,13 +1,15 @@
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, make_response, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, make_response, current_app, send_file
 from flask_login import login_required, current_user
 from backend import db
 from backend.models import Client, Membership, Payment, Routine, Progress, CheckIn, GroupClass, ClassReservation
 from backend.forms import ClientForm, MembershipForm, PaymentForm, RoutineForm, ProgressForm
 from backend.utils.membership import effective_membership_price
 from backend.utils.tenant import get_current_gym_id
+from backend.face_recognizer import register_face, recognize, has_faces
 import qrcode
 import os
+import io
 from PIL import Image
 from werkzeug.utils import secure_filename
 import json
@@ -470,3 +472,53 @@ def qr_scan():
         db.session.commit()
         return jsonify({'message': 'Entrada registrada', 'client': client.name, 'time': checkin.timestamp.isoformat() + 'Z'})
     return jsonify({'error': 'Cliente no encontrado'}), 404
+
+
+@main.route('/face/register', methods=['GET'])
+@login_required
+def face_register_page():
+    clients = Client.query.filter_by(gym_id=get_current_gym_id()).all()
+    return render_template('face_register.html', clients=clients)
+
+
+@main.route('/face/register/<int:client_id>', methods=['POST'])
+@login_required
+def face_register_capture(client_id):
+    client = Client.query.filter_by(id=client_id, gym_id=get_current_gym_id()).first_or_404()
+    image_bytes = request.get_data()
+    if not image_bytes:
+        return jsonify({'error': 'No image data'}), 400
+    ok = register_face(client.id, image_bytes)
+    if not ok:
+        return jsonify({'error': 'No se detecto un rostro. Asegurate de estar bien iluminado.'}), 400
+    return jsonify({'message': f'Rostro registrado para {client.name}'})
+
+
+@main.route('/face/checkin', methods=['GET'])
+@login_required
+def face_checkin_page():
+    return render_template('face_checkin.html')
+
+
+@main.route('/face/checkin/scan', methods=['POST'])
+@login_required
+def face_checkin_scan():
+    image_bytes = request.get_data()
+    if not image_bytes:
+        return jsonify({'error': 'No image data'}), 400
+    cid, _ = recognize(image_bytes)
+    if cid is None:
+        return jsonify({'error': 'Rostro no reconocido'}), 404
+    client = Client.query.filter_by(id=cid, gym_id=get_current_gym_id()).first()
+    if not client:
+        return jsonify({'error': 'Cliente no encontrado'}), 404
+    checkin = CheckIn(gym_id=get_current_gym_id(), client_id=client.id)
+    db.session.add(checkin)
+    db.session.commit()
+    return jsonify({'message': 'Entrada registrada', 'client': client.name, 'time': checkin.timestamp.isoformat() + 'Z'})
+
+
+@main.route('/face/has/<int:client_id>')
+@login_required
+def face_has(client_id):
+    return jsonify({'has': has_faces(client_id)})
