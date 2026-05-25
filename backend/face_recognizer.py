@@ -1,71 +1,43 @@
 import os
+from PIL import Image, ImageDraw
+import io
+import math
 
 FACES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'faces')
 FACE_SIZE = (100, 100)
-_np = None
-_cv2 = None
 
 os.makedirs(FACES_DIR, exist_ok=True)
 
 
-def _get_np():
-    global _np
-    if _np is None:
-        try:
-            import numpy
-            _np = numpy
-        except ImportError:
-            return None
-    return _np
-
-
-def _get_cv2():
-    global _cv2
-    if _cv2 is None:
-        try:
-            import cv2
-            _cv2 = cv2
-        except ImportError:
-            return None
-    return _cv2
-
-
 def _detect_face(image_bytes: bytes):
-    cv2 = _get_cv2()
-    np = _get_np()
-    if cv2 is None or np is None:
+    """Extract face region using center crop (assumes face is centered in frame)."""
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+    except Exception:
         return None, None
-    cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-    img_array = np.frombuffer(image_bytes, np.uint8)
-    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-    if img is None:
-        return None, None
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    face_cascade = cv2.CascadeClassifier(cascade_path)
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(80, 80))
-    if len(faces) == 0:
-        return None, None
-    (x, y, w, h) = faces[0]
-    face_region = gray[y:y + h, x:x + w]
+    gray = img.convert('L')
+    w, h = gray.size
+    crop_size = min(w, h)
+    left = (w - crop_size) // 2
+    top = (h - crop_size) // 3
+    right = left + crop_size
+    bottom = top + crop_size
+    face = gray.crop((left, top, right, bottom))
     preview = img.copy()
-    cv2.rectangle(preview, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    _, preview_bytes = cv2.imencode('.jpg', preview)
-    return face_region, preview_bytes.tobytes()
+    draw = ImageDraw.Draw(preview)
+    draw.rectangle([left, top, right, bottom], outline=(0, 255, 0), width=3)
+    buf = io.BytesIO()
+    preview.save(buf, format='JPEG')
+    return face, buf.getvalue()
 
 
-def _vectorize(face_gray):
-    cv2 = _get_cv2()
-    np = _get_np()
-    if cv2 is None or np is None:
-        return None
-    resized = cv2.resize(face_gray, FACE_SIZE)
-    return resized.flatten().astype(np.float32)
+def _vectorize(face_image):
+    """Convert face image to flat list of pixel values."""
+    resized = face_image.resize(FACE_SIZE)
+    return list(resized.getdata())
 
 
 def register_face(client_id: int, image_bytes: bytes) -> bool:
-    cv2 = _get_cv2()
-    if cv2 is None:
-        return False
     face_region, _ = _detect_face(image_bytes)
     if face_region is None:
         return False
@@ -73,7 +45,7 @@ def register_face(client_id: int, image_bytes: bytes) -> bool:
     os.makedirs(client_dir, exist_ok=True)
     count = len([f for f in os.listdir(client_dir) if f.endswith('.jpg')])
     path = os.path.join(client_dir, f'{count + 1}.jpg')
-    cv2.imwrite(path, face_region)
+    face_region.save(path)
     return True
 
 
@@ -83,16 +55,10 @@ def has_faces(client_id: int) -> bool:
 
 
 def recognize(image_bytes: bytes, distance_threshold: float = 4500.0):
-    cv2 = _get_cv2()
-    np = _get_np()
-    if cv2 is None or np is None:
-        return None, None
     face_region, preview = _detect_face(image_bytes)
     if face_region is None:
         return None, None
     query_vec = _vectorize(face_region)
-    if query_vec is None:
-        return None, None
     best_id = None
     best_dist = float('inf')
     for cid_str in os.listdir(FACES_DIR):
@@ -103,13 +69,12 @@ def recognize(image_bytes: bytes, distance_threshold: float = 4500.0):
             if not fname.endswith('.jpg'):
                 continue
             path = os.path.join(cid_dir, fname)
-            img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-            if img is None:
+            try:
+                img = Image.open(path).convert('L')
+            except Exception:
                 continue
             stored_vec = _vectorize(img)
-            if stored_vec is None:
-                continue
-            dist = np.linalg.norm(query_vec - stored_vec)
+            dist = math.sqrt(sum((a - b) ** 2 for a, b in zip(query_vec, stored_vec)))
             if dist < best_dist:
                 best_dist = dist
                 best_id = int(cid_str)
@@ -119,4 +84,4 @@ def recognize(image_bytes: bytes, distance_threshold: float = 4500.0):
 
 
 def is_available() -> bool:
-    return _get_cv2() is not None and _get_np() is not None
+    return True
