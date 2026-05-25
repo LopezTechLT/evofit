@@ -23,7 +23,7 @@ def has_faces(client_id: int) -> bool:
     return os.path.isdir(client_dir) and len([f for f in os.listdir(client_dir) if f.endswith('.json')]) > 0
 
 
-def recognize(embedding: list, distance_threshold: float = 0.6):
+def recognize(embedding: list, distance_threshold: float = 0.4):
     if not embedding or len(embedding) != 128:
         return None
     best_id = None

@@ -26,6 +26,7 @@ const loadingDiv = document.getElementById('loadingModels');
 let stream = null;
 let modelsLoaded = false;
 let scanning = false;
+let busy = false;
 const WEIGHTS_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
 
 async function loadModels() {
@@ -65,13 +66,14 @@ startBtn.addEventListener('click', () => {
 });
 
 async function scanLoop() {
-    if (!scanning) return;
+    if (!scanning || busy) return;
     if (video.readyState < video.HAVE_ENOUGH_DATA) {
         requestAnimationFrame(scanLoop);
         return;
     }
+    busy = true;
     try {
-        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
+        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.7 }))
             .withFaceLandmarks().withFaceDescriptor();
         if (detection) {
             const embedding = Array.from(detection.descriptor);
@@ -83,6 +85,7 @@ async function scanLoop() {
             const data = await res.json();
             if (data.client) {
                 scanning = false;
+                busy = false;
                 resultDiv.innerHTML = '<div class="alert alert-success mb-0">Bienvenido ' + data.client + ' — ' + new Date(data.time).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) + '</div>';
                 setTimeout(() => {
                     resultDiv.innerHTML = '';
@@ -91,6 +94,7 @@ async function scanLoop() {
                 }, 3000);
                 return;
             } else if (data.error) {
+                busy = false;
                 resultDiv.innerHTML = '<div class="alert alert-danger mb-0">Rostro no reconocido</div>';
                 setTimeout(() => {
                     resultDiv.innerHTML = '';
@@ -102,6 +106,7 @@ async function scanLoop() {
     } catch (e) {
         // ignore face-api errors in loop
     }
+    busy = false;
     if (scanning) requestAnimationFrame(scanLoop);
 }
 </script>
