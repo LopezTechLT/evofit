@@ -53,6 +53,7 @@ class Client(db.Model):
     payments = db.relationship('Payment', backref='client', lazy=True)
     routines = db.relationship('Routine', backref='client', lazy=True)
     progress = db.relationship('Progress', backref='client', lazy=True)
+    face_embeddings = db.relationship('FaceEmbedding', backref='client', lazy=True)
 
 class Membership(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -106,6 +107,13 @@ class Progress(db.Model):
     imc = db.Column(db.Float)
     measurements = db.Column(db.Text)  # JSON string of measurements
     gym = db.relationship('Gym', backref='progress_items')
+
+class FaceEmbedding(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
+    embedding = db.Column(db.Text, nullable=False)  # JSON: list of 128 floats
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 class Trainer(db.Model):
     id = db.Column(db.Integer, primary_key=True)

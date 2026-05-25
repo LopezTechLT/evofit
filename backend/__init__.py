@@ -96,6 +96,16 @@ def create_app():
                 )
             '''))
             db.session.commit()
+        if 'face_embedding' not in tables:
+            db.session.execute(db.text('''
+                CREATE TABLE face_embedding (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    client_id INTEGER NOT NULL REFERENCES client(id),
+                    embedding TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            '''))
+            db.session.commit()
 
         from backend.models import Gym, User, League
         if not Gym.query.first():
