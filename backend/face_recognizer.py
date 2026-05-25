@@ -1,11 +1,10 @@
 import os
 import cv2
 import numpy as np
-from PIL import Image
 
 FACES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'faces')
-TRAINER_FILE = os.path.join(FACES_DIR, 'trainer.yml')
 CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+FACE_SIZE = (100, 100)
 
 os.makedirs(FACES_DIR, exist_ok=True)
 
@@ -21,11 +20,16 @@ def _detect_face(image_bytes: bytes):
         return None, None
     (x, y, w, h) = faces[0]
     face_region = gray[y:y + h, x:x + w]
-    # Draw rectangle on copy for preview
     preview = img.copy()
     cv2.rectangle(preview, (x, y), (x + w, y + h), (0, 255, 0), 2)
     _, preview_bytes = cv2.imencode('.jpg', preview)
     return face_region, preview_bytes.tobytes()
+
+
+def _vectorize(face_gray):
+    resized = cv2.resize(face_gray, FACE_SIZE)
+    return resized.flatten().astype(np.float32)
+
 
 def register_face(client_id: int, image_bytes: bytes) -> bool:
     face_region, _ = _detect_face(image_bytes)
@@ -36,16 +40,23 @@ def register_face(client_id: int, image_bytes: bytes) -> bool:
     count = len([f for f in os.listdir(client_dir) if f.endswith('.jpg')])
     path = os.path.join(client_dir, f'{count + 1}.jpg')
     cv2.imwrite(path, face_region)
-    _retrain()
     return True
+
 
 def has_faces(client_id: int) -> bool:
     client_dir = os.path.join(FACES_DIR, str(client_id))
     return os.path.isdir(client_dir) and len([f for f in os.listdir(client_dir) if f.endswith('.jpg')]) > 0
 
-def _retrain():
-    faces = []
-    ids = []
+
+def recognize(image_bytes: bytes, distance_threshold: float = 4500.0):
+    face_region, preview = _detect_face(image_bytes)
+    if face_region is None:
+        return None, None
+
+    query_vec = _vectorize(face_region)
+    best_id = None
+    best_dist = float('inf')
+
     for cid_str in os.listdir(FACES_DIR):
         cid_dir = os.path.join(FACES_DIR, cid_str)
         if not os.path.isdir(cid_dir):
@@ -57,23 +68,12 @@ def _retrain():
             img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
             if img is None:
                 continue
-            faces.append(img)
-            ids.append(int(cid_str))
-    if not faces:
-        return
-    recognizer = cv2.face.LBPHFaceRecognizer_create()
-    recognizer.train(faces, np.array(ids))
-    recognizer.write(TRAINER_FILE)
+            stored_vec = _vectorize(img)
+            dist = np.linalg.norm(query_vec - stored_vec)
+            if dist < best_dist:
+                best_dist = dist
+                best_id = int(cid_str)
 
-def recognize(image_bytes: bytes, confidence_threshold: float = 55.0):
-    if not os.path.exists(TRAINER_FILE):
+    if best_id is None or best_dist > distance_threshold:
         return None, None
-    face_region, preview = _detect_face(image_bytes)
-    if face_region is None:
-        return None, None
-    recognizer = cv2.face.LBPHFaceRecognizer_create()
-    recognizer.read(TRAINER_FILE)
-    cid, conf = recognizer.predict(face_region)
-    if conf > confidence_threshold:
-        return None, None
-    return int(cid), preview
+    return best_id, preview
