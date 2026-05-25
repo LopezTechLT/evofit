@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, make_response, current_app, send_file
 from flask_login import login_required, current_user
 from backend import db
-from backend.models import Client, Membership, Payment, Routine, Progress, CheckIn, GroupClass, ClassReservation
+from backend.models import Client, Membership, Payment, Routine, Progress, CheckIn, GroupClass, ClassReservation, FaceEmbedding
 from backend.forms import ClientForm, MembershipForm, PaymentForm, RoutineForm, ProgressForm
 from backend.utils.membership import effective_membership_price
 from backend.utils.tenant import get_current_gym_id
@@ -528,3 +528,34 @@ def face_checkin_scan():
 @login_required
 def face_has(client_id):
     return jsonify({'has': has_faces(client_id)})
+
+
+@main.route('/face/list/<int:client_id>')
+@login_required
+def face_list(client_id):
+    client = Client.query.filter_by(id=client_id, gym_id=get_current_gym_id()).first_or_404()
+    faces = FaceEmbedding.query.filter_by(client_id=client.id).order_by(FaceEmbedding.created_at.desc()).all()
+    return jsonify({
+        'faces': [{'id': f.id, 'created_at': f.created_at.isoformat() if f.created_at else None} for f in faces]
+    })
+
+
+@main.route('/face/delete/<int:face_id>', methods=['POST'])
+@login_required
+def face_delete(face_id):
+    fe = FaceEmbedding.query.get_or_404(face_id)
+    client = Client.query.filter_by(id=fe.client_id, gym_id=get_current_gym_id()).first()
+    if not client:
+        return jsonify({'error': 'No autorizado'}), 403
+    db.session.delete(fe)
+    db.session.commit()
+    return jsonify({'message': 'Eliminado'})
+
+
+@main.route('/face/delete_all/<int:client_id>', methods=['POST'])
+@login_required
+def face_delete_all(client_id):
+    client = Client.query.filter_by(id=client_id, gym_id=get_current_gym_id()).first_or_404()
+    FaceEmbedding.query.filter_by(client_id=client.id).delete()
+    db.session.commit()
+    return jsonify({'message': 'Todas las capturas eliminadas'})

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Registro facial</h2>
-<p class="text-muted">Selecciona un cliente, presiona "Iniciar camara" y luego "Capturar rostro". Asegurate de estar bien iluminado y mirando directamente a la camara.</p>
+<p class="text-muted">Selecciona un cliente, presiona "Iniciar camara" y luego "Capturar rostro".</p>
 
 <div class="row">
     <div class="col-md-6">
@@ -11,15 +11,41 @@
                 <select id="clientSelect" class="form-select mb-3">
                     <option value="">-- Seleccionar --</option>
                     {% for c in clients %}
-                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    <option value="{{ c.id }}">{{ c.name }} ({{ c.id }})</option>
                     {% endfor %}
                 </select>
-                <button id="startBtn" class="btn btn-dark mb-3" disabled>Iniciar camara</button>
+
+                <div id="loadingModels" class="alert alert-info mb-2" style="display:none">Cargando modelos...</div>
+
+                <div id="cameraControls" style="display:none">
+                    <div class="d-flex gap-2 mb-2">
+                        <button id="startBtn" class="btn btn-dark flex-grow-1">Iniciar camara</button>
+                        <button id="flipBtn" class="btn btn-outline-secondary" title="Cambiar camara">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><circle cx="12" cy="12" r="4"/><path d="m16 8-4 4"/><path d="m12 8 4 4"/></svg>
+                        </button>
+                    </div>
+                </div>
+
                 <div id="status" class="mb-2"></div>
-                <div id="loadingModels" class="alert alert-info mb-2" style="display:none">Cargando modelos de reconocimiento facial...</div>
-                <video id="video" class="img-fluid rounded" style="max-width:100%;height:auto;display:none" playsinline></video>
+
+                <div id="videoContainer" style="position:relative;display:none">
+                    <video id="video" class="img-fluid rounded" playsinline style="width:100%;height:auto"></video>
+                    <div id="faceGuide" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;align-items:center;justify-content:center">
+                        <div id="ovalGuide" style="width:70%;aspect-ratio:3/4;border:3px dashed rgba(255,255,255,0.5);border-radius:50%"></div>
+                    </div>
+                    <div id="faceStatus" style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);color:#fff;padding:4px 10px;border-radius:20px;font-size:13px;display:none">
+                        <span id="faceStatusDot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#666;margin-right:6px;vertical-align:middle"></span>
+                        <span id="faceStatusText">Buscando...</span>
+                    </div>
+                </div>
+
                 <canvas id="overlay" class="d-none"></canvas>
-                <button id="captureBtn" class="btn btn-primary mt-2" style="display:none">Capturar rostro</button>
+
+                <div id="captureRow" style="display:none" class="mt-2">
+                    <button id="captureBtn" class="btn btn-primary w-100">Capturar rostro</button>
+                </div>
+
+                <div id="capturesList" class="mt-3"></div>
             </div>
         </div>
     </div>
@@ -30,12 +56,24 @@
 const video = document.getElementById('video');
 const overlay = document.getElementById('overlay');
 const startBtn = document.getElementById('startBtn');
+const flipBtn = document.getElementById('flipBtn');
 const captureBtn = document.getElementById('captureBtn');
 const statusDiv = document.getElementById('status');
 const loadingDiv = document.getElementById('loadingModels');
+const videoContainer = document.getElementById('videoContainer');
+const captureRow = document.getElementById('captureRow');
+const cameraControls = document.getElementById('cameraControls');
 const clientSelect = document.getElementById('clientSelect');
+const capturesList = document.getElementById('capturesList');
+const faceStatus = document.getElementById('faceStatus');
+const faceStatusDot = document.getElementById('faceStatusDot');
+const faceStatusText = document.getElementById('faceStatusText');
+
 let stream = null;
 let modelsLoaded = false;
+let facingMode = 'environment';
+let currentClientId = null;
+let faceDetectTimer = null;
 const WEIGHTS_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
 
 async function loadModels() {
@@ -47,41 +85,139 @@ async function loadModels() {
         modelsLoaded = true;
         loadingDiv.innerHTML = '<span class="text-success">Modelos cargados</span>';
         setTimeout(() => { loadingDiv.style.display = 'none'; }, 1500);
+        cameraControls.style.display = '';
     } catch (e) {
         loadingDiv.innerHTML = '<span class="text-danger">Error al cargar modelos: ' + e.message + '</span>';
     }
 }
 loadModels();
 
+async function loadCaptures(clientId) {
+    if (!clientId) { capturesList.innerHTML = ''; return; }
+    try {
+        const res = await fetch('/face/list/' + clientId);
+        const data = await res.json();
+        if (!data.faces || data.faces.length === 0) {
+            capturesList.innerHTML = '<div class="text-muted small">Sin capturas registradas</div>';
+            return;
+        }
+        let html = '<div class="d-flex justify-content-between align-items-center mb-1"><strong class="small">Capturas (' + data.faces.length + ')</strong>';
+        html += '<button class="btn btn-outline-danger btn-sm" onclick="deleteAll(' + clientId + ')">Eliminar todas</button></div>';
+        html += '<div class="list-group small">';
+        for (const f of data.faces) {
+            const date = f.created_at ? new Date(f.created_at).toLocaleString('es-CO') : '—';
+            html += '<div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1">';
+            html += '<span>#' + f.id + ' — ' + date + '</span>';
+            html += '<button class="btn btn-outline-danger btn-sm py-0" onclick="deleteFace(' + f.id + ', ' + clientId + ')">Eliminar</button>';
+            html += '</div>';
+        }
+        html += '</div>';
+        capturesList.innerHTML = html;
+    } catch (e) {
+        capturesList.innerHTML = '<div class="text-danger small">Error al cargar capturas</div>';
+    }
+}
+
+async function deleteFace(faceId, clientId) {
+    if (!confirm('Eliminar esta captura?')) return;
+    try {
+        await fetch('/face/delete/' + faceId, { method: 'POST' });
+        loadCaptures(clientId);
+    } catch (e) {
+        statusDiv.innerHTML = '<span class="text-danger">Error al eliminar</span>';
+    }
+}
+
+async function deleteAll(clientId) {
+    if (!confirm('Eliminar TODAS las capturas de este cliente?')) return;
+    try {
+        await fetch('/face/delete_all/' + clientId, { method: 'POST' });
+        loadCaptures(clientId);
+        statusDiv.innerHTML = '<span class="text-success">Todas las capturas eliminadas</span>';
+    } catch (e) {
+        statusDiv.innerHTML = '<span class="text-danger">Error al eliminar</span>';
+    }
+}
+
 clientSelect.addEventListener('change', () => {
-    startBtn.disabled = !clientSelect.value;
+    currentClientId = clientSelect.value;
+    if (currentClientId) {
+        stopCamera();
+        loadCaptures(currentClientId);
+    } else {
+        capturesList.innerHTML = '';
+    }
 });
+
+async function startCamera(facing) {
+    if (stream) stopCamera();
+    statusDiv.innerHTML = '<span class="text-muted">Iniciando camara...</span>';
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing } });
+        video.srcObject = stream;
+        videoContainer.style.display = '';
+        captureRow.style.display = '';
+        video.play();
+        statusDiv.innerHTML = '<span class="text-success">Camara activa</span>';
+        startBtn.innerHTML = 'Detener camara';
+        startBtn.classList.remove('btn-dark');
+        startBtn.classList.add('btn-danger');
+        faceStatus.style.display = '';
+        startFaceDetection();
+    } catch (e) {
+        statusDiv.innerHTML = '<span class="text-danger">Camara no disponible</span>';
+    }
+}
+
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+    }
+    videoContainer.style.display = 'none';
+    captureRow.style.display = 'none';
+    faceStatus.style.display = 'none';
+    if (faceDetectTimer) { clearInterval(faceDetectTimer); faceDetectTimer = null; }
+    startBtn.innerHTML = 'Iniciar camara';
+    startBtn.classList.remove('btn-danger');
+    startBtn.classList.add('btn-dark');
+}
 
 startBtn.addEventListener('click', () => {
+    if (stream) { stopCamera(); return; }
     if (!modelsLoaded) { statusDiv.innerHTML = '<span class="text-warning">Espera a que carguen los modelos...</span>'; return; }
-    startBtn.disabled = true;
-    statusDiv.innerHTML = '<span class="text-muted">Iniciando camara...</span>';
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(s => {
-            stream = s;
-            video.srcObject = s;
-            video.style.display = '';
-            video.play();
-            captureBtn.style.display = '';
-            statusDiv.innerHTML = '<span class="text-success">Camara activa. Presiona "Capturar rostro".</span>';
-            overlay.width = video.videoWidth || 640;
-            overlay.height = video.videoHeight || 480;
-        })
-        .catch(() => {
-            statusDiv.innerHTML = '<span class="text-danger">Camara no disponible</span>';
-            startBtn.disabled = false;
-        });
+    if (!currentClientId) { statusDiv.innerHTML = '<span class="text-warning">Selecciona un cliente primero</span>'; return; }
+    startCamera(facingMode);
 });
 
+flipBtn.addEventListener('click', () => {
+    facingMode = facingMode === 'environment' ? 'user' : 'environment';
+    if (stream) startCamera(facingMode);
+});
+
+function startFaceDetection() {
+    if (faceDetectTimer) clearInterval(faceDetectTimer);
+    faceDetectTimer = setInterval(async () => {
+        if (!stream || video.readyState < video.HAVE_ENOUGH_DATA) return;
+        try {
+            const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }));
+            if (det) {
+                faceStatusDot.style.background = '#4ade80';
+                faceStatusText.textContent = 'Rostro detectado';
+            } else {
+                faceStatusDot.style.background = '#f87171';
+                faceStatusText.textContent = 'Sin rostro';
+            }
+        } catch (e) {
+            // ignore
+        }
+    }, 500);
+}
+
 captureBtn.addEventListener('click', async () => {
-    if (!stream || !clientSelect.value || !modelsLoaded) return;
+    if (!stream || !currentClientId || !modelsLoaded) return;
     captureBtn.disabled = true;
-    statusDiv.innerHTML = '<span class="text-muted">Detectando rostro...</span>';
+    statusDiv.innerHTML = '<span class="text-muted">Procesando...</span>';
     try {
         const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
             .withFaceLandmarks().withFaceDescriptor();
@@ -91,7 +227,7 @@ captureBtn.addEventListener('click', async () => {
             return;
         }
         const embedding = Array.from(detection.descriptor);
-        const res = await fetch('/face/register/' + clientSelect.value, {
+        const res = await fetch('/face/register/' + currentClientId, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ embedding })
@@ -100,19 +236,8 @@ captureBtn.addEventListener('click', async () => {
         if (data.error) {
             statusDiv.innerHTML = '<span class="text-danger">' + data.error + '</span>';
         } else {
-            const count = document.querySelectorAll('#preview .badge').length + 1;
-            let previewDiv = document.getElementById('preview');
-            if (!previewDiv) {
-                previewDiv = document.createElement('div');
-                previewDiv.id = 'preview';
-                previewDiv.className = 'mt-2';
-                captureBtn.parentNode.appendChild(previewDiv);
-            }
-            const badge = document.createElement('span');
-            badge.className = 'badge bg-success me-1';
-            badge.textContent = 'Captura ' + count;
-            previewDiv.appendChild(badge);
             statusDiv.innerHTML = '<span class="text-success">' + data.message + '</span>';
+            loadCaptures(currentClientId);
         }
     } catch (e) {
         statusDiv.innerHTML = '<span class="text-danger">Error: ' + e.message + '</span>';
