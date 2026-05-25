@@ -488,12 +488,12 @@ def face_register_page():
 @login_required
 def face_register_capture(client_id):
     client = Client.query.filter_by(id=client_id, gym_id=get_current_gym_id()).first_or_404()
-    image_bytes = request.get_data()
-    if not image_bytes:
-        return jsonify({'error': 'No image data'}), 400
-    ok = register_face(client.id, image_bytes)
+    data = request.get_json(silent=True)
+    if not data or 'embedding' not in data:
+        return jsonify({'error': 'No embedding data'}), 400
+    ok = register_face(client.id, data['embedding'])
     if not ok:
-        return jsonify({'error': 'No se detecto un rostro. Asegurate de estar bien iluminado.'}), 400
+        return jsonify({'error': 'Embedding invalido. Asegurate de estar bien iluminado y frente a la camara.'}), 400
     return jsonify({'message': f'Rostro registrado para {client.name}'})
 
 
@@ -509,10 +509,10 @@ def face_checkin_page():
 @main.route('/face/checkin/scan', methods=['POST'])
 @login_required
 def face_checkin_scan():
-    image_bytes = request.get_data()
-    if not image_bytes:
-        return jsonify({'error': 'No image data'}), 400
-    cid, _ = recognize(image_bytes)
+    data = request.get_json(silent=True)
+    if not data or 'embedding' not in data:
+        return jsonify({'error': 'No embedding data'}), 400
+    cid = recognize(data['embedding'])
     if cid is None:
         return jsonify({'error': 'Rostro no reconocido'}), 404
     client = Client.query.filter_by(id=cid, gym_id=get_current_gym_id()).first()

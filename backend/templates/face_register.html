@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Registro facial</h2>
-<p class="text-muted">Selecciona un cliente y captura su rostro para habilitar el check-in facial.</p>
+<p class="text-muted">Selecciona un cliente, presiona "Iniciar camara" y luego "Capturar rostro". Asegurate de estar bien iluminado y mirando directamente a la camara.</p>
 
 <div class="row">
     <div class="col-md-6">
@@ -16,32 +16,49 @@
                 </select>
                 <button id="startBtn" class="btn btn-dark mb-3" disabled>Iniciar camara</button>
                 <div id="status" class="mb-2"></div>
+                <div id="loadingModels" class="alert alert-info mb-2" style="display:none">Cargando modelos de reconocimiento facial...</div>
                 <video id="video" class="img-fluid rounded" style="max-width:100%;height:auto;display:none" playsinline></video>
-                <canvas id="canvas" class="d-none"></canvas>
-                <div id="preview" class="mt-2"></div>
+                <canvas id="overlay" class="d-none"></canvas>
                 <button id="captureBtn" class="btn btn-primary mt-2" style="display:none">Capturar rostro</button>
             </div>
         </div>
     </div>
 </div>
 
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
 const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
 const startBtn = document.getElementById('startBtn');
 const captureBtn = document.getElementById('captureBtn');
 const statusDiv = document.getElementById('status');
-const preview = document.getElementById('preview');
+const loadingDiv = document.getElementById('loadingModels');
 const clientSelect = document.getElementById('clientSelect');
 let stream = null;
-let capturedCount = 0;
+let modelsLoaded = false;
+const WEIGHTS_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+
+async function loadModels() {
+    loadingDiv.style.display = '';
+    try {
+        await faceapi.nets.tinyFaceDetector.loadFromUri(WEIGHTS_URL);
+        await faceapi.nets.faceLandmark68Net.loadFromUri(WEIGHTS_URL);
+        await faceapi.nets.faceRecognitionNet.loadFromUri(WEIGHTS_URL);
+        modelsLoaded = true;
+        loadingDiv.innerHTML = '<span class="text-success">Modelos cargados</span>';
+        setTimeout(() => { loadingDiv.style.display = 'none'; }, 1500);
+    } catch (e) {
+        loadingDiv.innerHTML = '<span class="text-danger">Error al cargar modelos: ' + e.message + '</span>';
+    }
+}
+loadModels();
 
 clientSelect.addEventListener('change', () => {
     startBtn.disabled = !clientSelect.value;
 });
 
 startBtn.addEventListener('click', () => {
+    if (!modelsLoaded) { statusDiv.innerHTML = '<span class="text-warning">Espera a que carguen los modelos...</span>'; return; }
     startBtn.disabled = true;
     statusDiv.innerHTML = '<span class="text-muted">Iniciando camara...</span>';
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
@@ -52,6 +69,8 @@ startBtn.addEventListener('click', () => {
             video.play();
             captureBtn.style.display = '';
             statusDiv.innerHTML = '<span class="text-success">Camara activa. Presiona "Capturar rostro".</span>';
+            overlay.width = video.videoWidth || 640;
+            overlay.height = video.videoHeight || 480;
         })
         .catch(() => {
             statusDiv.innerHTML = '<span class="text-danger">Camara no disponible</span>';
@@ -59,26 +78,46 @@ startBtn.addEventListener('click', () => {
         });
 });
 
-captureBtn.addEventListener('click', () => {
-    if (!stream || !clientSelect.value) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
-    canvas.toBlob(blob => {
-        fetch('/face/register/' + clientSelect.value, { method: 'POST', body: blob })
-            .then(r => r.json())
-            .then(data => {
-                if (data.error) {
-                    statusDiv.innerHTML = '<span class="text-danger">' + data.error + '</span>';
-                } else {
-                    capturedCount++;
-                    statusDiv.innerHTML = '<span class="text-success">' + data.message + ' (' + capturedCount + ')</span>';
-                }
-            })
-            .catch(() => {
-                statusDiv.innerHTML = '<span class="text-danger">Error al registrar</span>';
-            });
-    }, 'image/jpeg');
+captureBtn.addEventListener('click', async () => {
+    if (!stream || !clientSelect.value || !modelsLoaded) return;
+    captureBtn.disabled = true;
+    statusDiv.innerHTML = '<span class="text-muted">Detectando rostro...</span>';
+    try {
+        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
+            .withFaceLandmarks().withFaceDescriptor();
+        if (!detection) {
+            statusDiv.innerHTML = '<span class="text-danger">No se detecto un rostro. Asegurate de estar bien iluminado y mirando a la camara.</span>';
+            captureBtn.disabled = false;
+            return;
+        }
+        const embedding = Array.from(detection.descriptor);
+        const res = await fetch('/face/register/' + clientSelect.value, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ embedding })
+        });
+        const data = await res.json();
+        if (data.error) {
+            statusDiv.innerHTML = '<span class="text-danger">' + data.error + '</span>';
+        } else {
+            const count = document.querySelectorAll('#preview .badge').length + 1;
+            let previewDiv = document.getElementById('preview');
+            if (!previewDiv) {
+                previewDiv = document.createElement('div');
+                previewDiv.id = 'preview';
+                previewDiv.className = 'mt-2';
+                captureBtn.parentNode.appendChild(previewDiv);
+            }
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-success me-1';
+            badge.textContent = 'Captura ' + count;
+            previewDiv.appendChild(badge);
+            statusDiv.innerHTML = '<span class="text-success">' + data.message + '</span>';
+        }
+    } catch (e) {
+        statusDiv.innerHTML = '<span class="text-danger">Error: ' + e.message + '</span>';
+    }
+    captureBtn.disabled = false;
 });
 </script>
 {% endblock %}

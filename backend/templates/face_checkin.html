@@ -7,26 +7,44 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-body text-center">
+                <div id="loadingModels" class="alert alert-info mb-2" style="display:none">Cargando modelos de reconocimiento facial...</div>
                 <button id="startBtn" class="btn btn-dark mb-3">Iniciar camara</button>
                 <video id="video" class="img-fluid rounded" style="max-width:100%;height:auto;display:none" playsinline></video>
-                <canvas id="canvas" class="d-none"></canvas>
+                <canvas id="overlay" class="d-none"></canvas>
                 <div id="result" class="mt-3"></div>
             </div>
         </div>
     </div>
 </div>
 
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
 const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
 const resultDiv = document.getElementById('result');
 const startBtn = document.getElementById('startBtn');
+const loadingDiv = document.getElementById('loadingModels');
 let stream = null;
+let modelsLoaded = false;
 let scanning = false;
-let scanTimeout = null;
+const WEIGHTS_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+
+async function loadModels() {
+    loadingDiv.style.display = '';
+    try {
+        await faceapi.nets.tinyFaceDetector.loadFromUri(WEIGHTS_URL);
+        await faceapi.nets.faceLandmark68Net.loadFromUri(WEIGHTS_URL);
+        await faceapi.nets.faceRecognitionNet.loadFromUri(WEIGHTS_URL);
+        modelsLoaded = true;
+        loadingDiv.innerHTML = '<span class="text-success">Modelos cargados</span>';
+        setTimeout(() => { loadingDiv.style.display = 'none'; }, 1500);
+    } catch (e) {
+        loadingDiv.innerHTML = '<span class="text-danger">Error al cargar modelos: ' + e.message + '</span>';
+    }
+}
+loadModels();
 
 startBtn.addEventListener('click', () => {
+    if (!modelsLoaded) { resultDiv.innerHTML = '<div class="alert alert-warning mb-0">Espera a que carguen los modelos...</div>'; return; }
     startBtn.disabled = true;
     startBtn.textContent = 'Iniciando...';
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
@@ -46,42 +64,45 @@ startBtn.addEventListener('click', () => {
         });
 });
 
-function scanLoop() {
+async function scanLoop() {
     if (!scanning) return;
-    if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+    if (video.readyState < video.HAVE_ENOUGH_DATA) {
         requestAnimationFrame(scanLoop);
         return;
     }
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
-    canvas.toBlob(blob => {
-        fetch('/face/checkin/scan', { method: 'POST', body: blob })
-            .then(r => r.json())
-            .then(data => {
-                if (data.client) {
-                    scanning = false;
-                    resultDiv.innerHTML = '<div class="alert alert-success mb-0">Bienvenido ' + data.client + ' — ' + new Date(data.time).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) + '</div>';
-                    setTimeout(() => {
-                        resultDiv.innerHTML = '';
-                        scanning = true;
-                        scanLoop();
-                    }, 3000);
-                } else if (data.error) {
-                    resultDiv.innerHTML = '<div class="alert alert-danger mb-0">' + data.error + '</div>';
-                    setTimeout(() => {
-                        resultDiv.innerHTML = '';
-                        if (scanning) scanLoop();
-                    }, 1500);
-                    return;
-                } else {
-                    if (scanning) requestAnimationFrame(scanLoop);
-                }
-            })
-            .catch(() => {
-                if (scanning) requestAnimationFrame(scanLoop);
+    try {
+        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
+            .withFaceLandmarks().withFaceDescriptor();
+        if (detection) {
+            const embedding = Array.from(detection.descriptor);
+            const res = await fetch('/face/checkin/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ embedding })
             });
-    }, 'image/jpeg');
+            const data = await res.json();
+            if (data.client) {
+                scanning = false;
+                resultDiv.innerHTML = '<div class="alert alert-success mb-0">Bienvenido ' + data.client + ' — ' + new Date(data.time).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) + '</div>';
+                setTimeout(() => {
+                    resultDiv.innerHTML = '';
+                    scanning = true;
+                    scanLoop();
+                }, 3000);
+                return;
+            } else if (data.error) {
+                resultDiv.innerHTML = '<div class="alert alert-danger mb-0">Rostro no reconocido</div>';
+                setTimeout(() => {
+                    resultDiv.innerHTML = '';
+                    if (scanning) scanLoop();
+                }, 1500);
+                return;
+            }
+        }
+    } catch (e) {
+        // ignore face-api errors in loop
+    }
+    if (scanning) requestAnimationFrame(scanLoop);
 }
 </script>
 {% endblock %}
