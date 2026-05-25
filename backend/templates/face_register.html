@@ -61,7 +61,7 @@ startBtn.addEventListener('click', () => {
     if (!modelsLoaded) { statusDiv.innerHTML = '<span class="text-warning">Espera a que carguen los modelos...</span>'; return; }
     startBtn.disabled = true;
     statusDiv.innerHTML = '<span class="text-muted">Iniciando camara...</span>';
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
         .then(s => {
             stream = s;
             video.srcObject = s;
